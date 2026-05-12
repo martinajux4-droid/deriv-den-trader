@@ -157,8 +157,14 @@ export function StrategyPage({ id }: { id: StrategyId }) {
 
   const headerAccent = useMemo(() => ({ background: meta.accentBg, color: meta.accent }), [meta]);
 
+  // Header live status
+  const headerTicks = useTicks(symbol, 60);
+  const headerAnalysis = analyze(headerTicks.map((t) => t.quote));
+  const ready = (headerAnalysis?.entryScore ?? 0) >= 60 && (headerAnalysis?.confidence ?? 0) >= 70;
+  const vol = headerAnalysis?.volatility ?? 0;
+
   return (
-    <div className="space-y-4 pb-24 md:pb-4">
+    <div className="animate-fade-in space-y-4 pb-28 md:pb-28">
       {/* Header */}
       <div className="glass-card p-4 md:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -169,6 +175,10 @@ export function StrategyPage({ id }: { id: StrategyId }) {
             <div>
               <div className="flex items-center gap-2">
                 <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em]" style={headerAccent}>{meta.accentLabel}</span>
+                <span className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${ready ? "border-bull/40 bg-bull/10 text-bull" : "border-white/10 bg-white/[0.02] text-muted-foreground"}`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${ready ? "bg-bull animate-pulse" : "bg-muted-foreground"}`} />
+                  {ready ? "Engine ready" : "Calibrating"}
+                </span>
               </div>
               <h1 className="mt-1 text-2xl font-semibold tracking-tight">{meta.title}</h1>
               <p className="text-xs text-muted-foreground">{meta.subtitle}</p>
@@ -181,6 +191,20 @@ export function StrategyPage({ id }: { id: StrategyId }) {
                 {DERIV_SYMBOLS.map((s) => <SelectItem key={s.symbol} value={s.symbol}>{s.name}</SelectItem>)}
               </SelectContent>
             </Select>
+          </div>
+        </div>
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          <div className="rounded-lg border border-white/5 bg-white/[0.02] px-2.5 py-1.5">
+            <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground"><Cpu className="h-2.5 w-2.5" />AI engine</div>
+            <div className="text-xs font-semibold" style={{ color: meta.accent }}>{meta.accentLabel}</div>
+          </div>
+          <div className="rounded-lg border border-white/5 bg-white/[0.02] px-2.5 py-1.5">
+            <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground"><Activity className="h-2.5 w-2.5" />Market readiness</div>
+            <div className="text-xs num font-semibold">{headerAnalysis?.entryScore ?? 0}/100</div>
+          </div>
+          <div className="rounded-lg border border-white/5 bg-white/[0.02] px-2.5 py-1.5">
+            <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground"><Gauge className="h-2.5 w-2.5" />Volatility</div>
+            <div className={`text-xs num font-semibold ${vol >= 70 ? "text-bear" : vol >= 40 ? "text-warning" : "text-bull"}`}>{vol.toFixed(0)}%</div>
           </div>
         </div>
         <div className="mt-4 border-t border-white/5 pt-4">
