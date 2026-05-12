@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Play, Square, AlertTriangle } from "lucide-react";
+import { setBotStatus } from "@/hooks/use-bot-status";
 
 export const Route = createFileRoute("/_authenticated/bot")({
   component: BotPage,
@@ -66,13 +67,25 @@ function BotPage() {
     runIdRef.current = run?.id ?? null;
 
     setRunning(true); setLogs([]); setPnl(0); setTrades(0);
+    setBotStatus({ running: true, strategy: type, symbol, pnl: 0, trades: 0, startedAt: Date.now() });
 
     const runner = new BotRunner(
       client, cfg, balance?.currency || "USD",
       (e) => {
         if (e.kind === "log") log(e.msg, e.level);
-        if (e.kind === "trade_close") { setPnl((p) => p + e.profit); setTrades((t) => t + 1); }
-        if (e.kind === "stopped") { log(`Stopped: ${e.reason}`, "info"); setRunning(false); }
+        if (e.kind === "trade_close") {
+          setPnl((p) => {
+            const np = p + e.profit;
+            setBotStatus({ running: true, strategy: type, symbol, pnl: np, trades: trades + 1, startedAt: Date.now() });
+            return np;
+          });
+          setTrades((t) => t + 1);
+        }
+        if (e.kind === "stopped") {
+          log(`Stopped: ${e.reason}`, "info");
+          setRunning(false);
+          setBotStatus({ running: false });
+        }
       },
       async (data) => {
         if (!user) return;
@@ -108,6 +121,7 @@ function BotPage() {
     runnerRef.current = runner;
     runner.run().finally(async () => {
       setRunning(false);
+      setBotStatus({ running: false });
       if (runIdRef.current) {
         await supabase.from("bot_runs").update({
           status: "stopped", stopped_at: new Date().toISOString(),
