@@ -368,6 +368,10 @@
   background: oklch(1 0 0 / 0.05);
   outline: none;
 }
+.input-glow:hover {
+  border-color: oklch(0.78 0.16 200 / 0.35);
+  box-shadow: 0 0 18px -6px oklch(0.78 0.16 200 / 0.4);
+}
 @keyframes digit-pop { 0% { transform: translateY(6px); opacity: 0;} 100% { transform: translateY(0); opacity: 1;} }
 .digit-pop { animation: digit-pop .35s cubic-bezier(.2,.7,.3,1.2); }
 @keyframes meter-sweep { 0% { transform: rotate(-90deg);} 100% { transform: rotate(270deg);} }
