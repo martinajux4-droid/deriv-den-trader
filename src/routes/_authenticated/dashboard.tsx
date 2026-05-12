@@ -12,6 +12,7 @@ import { AIInsightsPanel } from "@/components/AIInsightsPanel";
 import { BotQuickLaunch } from "@/components/BotQuickLaunch";
 import { PerfCard } from "@/components/PerformanceCards";
 import { DashboardHero } from "@/components/DashboardHero";
+import { LiveAIStatus } from "@/components/LiveAIStatus";
 import { DERIV_SYMBOLS } from "@/lib/deriv-symbols";
 import { TrendingUp, Trophy, Target, Brain, Activity, CalendarDays } from "lucide-react";
 
@@ -84,6 +85,9 @@ function Dashboard() {
       />
 
       {accounts.length === 0 && <ConnectDeriv />}
+
+      {/* Inline live AI status — visible only while bot runs */}
+      <LiveAIStatus />
 
       {/* Performance KPI row */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
