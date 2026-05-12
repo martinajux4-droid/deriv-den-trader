@@ -18,7 +18,7 @@ export function MarketWatchGrid({
   selected, onSelect,
 }: { selected: string; onSelect: (s: string) => void; }) {
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-11">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
       {WATCHLIST.map((m) => (
         <MarketWatchTile
           key={m.symbol}
