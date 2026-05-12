@@ -237,7 +237,7 @@ export function MarketThermometer({ mode, symbol }: { mode: Mode; symbol: string
             {mode === "even-odd" ? (
               <>
                 <div className="text-[9px] font-medium uppercase tracking-[0.22em] text-muted-foreground">Last digit</div>
-                <div key={lastDigit} className="digit-pop num text-6xl font-bold" style={{ color: COLORS.ai, textShadow: `0 0 20px ${COLORS.ai}` }}>
+                <div key={lastDigit} className="digit-pop num text-5xl font-bold sm:text-6xl" style={{ color: COLORS.ai, textShadow: `0 0 20px ${COLORS.ai}` }}>
                   {lastDigit}
                 </div>
                 <div className="mt-1 text-[10px] uppercase tracking-[0.2em]" style={{ color: dominant.color }}>
@@ -247,7 +247,7 @@ export function MarketThermometer({ mode, symbol }: { mode: Mode; symbol: string
             ) : (
               <>
                 <div className="text-[9px] font-medium uppercase tracking-[0.22em] text-muted-foreground">Dominance</div>
-                <div className="num text-5xl font-bold" style={{ color: dominant.color, textShadow: `0 0 20px ${dominant.glow}` }}>
+                <div className="num text-4xl font-bold sm:text-5xl" style={{ color: dominant.color, textShadow: `0 0 20px ${dominant.glow}` }}>
                   {dom.toFixed(0)}<span className="text-2xl opacity-70">%</span>
                 </div>
                 <div className="mt-1 text-[10px] uppercase tracking-[0.2em]" style={{ color: dominant.color }}>
