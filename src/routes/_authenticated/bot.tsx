@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { AlertTriangle, Settings2, ChevronDown, Brain } from "lucide-react";
+import { AlertTriangle, Settings2, ChevronDown, Brain, TrendingUp, Hash, Sigma, Shuffle, Zap, Sparkles } from "lucide-react";
 import { setBotStatus, emitBotEvent, emitTakeProfit } from "@/hooks/use-bot-status";
 import { LiveTradeFeed } from "@/components/LiveTradeFeed";
 import { BotLaunchOverlay } from "@/components/BotLaunchOverlay";
@@ -29,28 +29,24 @@ export const Route = createFileRoute("/_authenticated/bot")({
 });
 
 type StrategyMeta = {
-  id: StrategyType; name: string; desc: string;
+  id: StrategyType; name: string; tag: string; desc: string;
   winRate: number; risk: "Low" | "Med" | "High"; market: string; roi: string;
+  speed: "Instant" | "Fast" | "Smart"; aiConf: number;
+  icon: React.ComponentType<{ className?: string }>;
+  tone: "primary" | "accent" | "bull" | "bear";
 };
 
 const STRATEGIES: StrategyMeta[] = [
-  { id: "rise_fall_ai",        name: "Rise / Fall AI",         desc: "AI trend + EMA cross + buy pressure → CALL/PUT.", winRate: 72, risk: "Med",  market: "V75 / V100", roi: "+8–14%" },
-  { id: "trend_following",     name: "Trend Following AI",     desc: "Rides confirmed momentum with confidence gating.",  winRate: 68, risk: "Med",  market: "V50 / V75",  roi: "+6–12%" },
-  { id: "smart_scalping",      name: "Smart Scalping",         desc: "Fast EMA-cross scalps on 3–5 tick contracts.",      winRate: 64, risk: "High", market: "V100",       roi: "+10–20%" },
-  { id: "momentum_ai",         name: "Momentum AI",            desc: "Enters when momentum > threshold with conviction.", winRate: 66, risk: "Med",  market: "V25 / V50",  roi: "+7–13%" },
-  { id: "sniper_entry",        name: "Sniper Entry AI",        desc: "Only the highest-quality A+ setups (entry ≥ 75).",  winRate: 78, risk: "Low",  market: "V75",         roi: "+9–15%" },
-  { id: "breakout_detection",  name: "Breakout Detection",     desc: "Fires on support / resistance breaks with volume.", winRate: 62, risk: "High", market: "V100",       roi: "+12–22%" },
-  { id: "reversal_detection",  name: "Reversal Detection",     desc: "Catches RSI extremes and exhaustion zones.",        winRate: 60, risk: "High", market: "V25 / V50",  roi: "+8–18%" },
-  { id: "sr_bounce",           name: "S/R Bounce",             desc: "Bounces off rolling support / resistance.",         winRate: 65, risk: "Med",  market: "V50",         roi: "+6–11%" },
-  { id: "volatility_spike",    name: "Volatility Spike Hunter",desc: "Trades high-volatility expansion regimes.",         winRate: 58, risk: "High", market: "Boom / Crash",roi: "+10–20%" },
-  { id: "even_odd_ai",         name: "Even / Odd AI",          desc: "Statistical bias on last-digit distribution.",      winRate: 56, risk: "Med",  market: "V100",        roi: "+5–9%" },
-  { id: "over_under_ai",       name: "Over / Under AI",        desc: "Picks digit barrier with the strongest edge.",      winRate: 58, risk: "Med",  market: "V100",        roi: "+5–10%" },
+  { id: "rise_fall_ai",       name: "Rise / Fall AI",      tag: "Trend",   desc: "Trend + EMA cross + buy pressure → CALL/PUT.",          winRate: 72, risk: "Med",  market: "V75 / V100", roi: "+8–14%",  speed: "Smart",   aiConf: 78, icon: TrendingUp, tone: "primary" },
+  { id: "even_odd_ai",        name: "Even / Odd AI",       tag: "Digits",  desc: "Last-digit parity bias detection on tick stream.",      winRate: 64, risk: "Low",  market: "V100",        roi: "+6–10%",  speed: "Fast",    aiConf: 72, icon: Sigma,      tone: "accent"  },
+  { id: "over_under_ai",      name: "Over / Under AI",     tag: "Digits",  desc: "Selects digit barrier with the strongest statistical edge.", winRate: 66, risk: "Med",  market: "V100",     roi: "+6–11%",  speed: "Fast",    aiConf: 74, icon: Hash,       tone: "bull"    },
+  { id: "matches_differs_ai", name: "Matches / Differs AI",tag: "Digits",  desc: "Hunts hot/cold digits and fires DIGITDIFF on rare repeats.", winRate: 70, risk: "Med",  market: "V75 / V100", roi: "+7–13%", speed: "Instant", aiConf: 80, icon: Shuffle,    tone: "bear"    },
 ];
 
 function BotPage() {
   const { user } = useAuth();
   const { client, active, balance } = useDeriv();
-  const [strategy, setStrategy] = useState<StrategyType>("sniper_entry");
+  const [strategy, setStrategy] = useState<StrategyType>("rise_fall_ai");
   const [symbol, setSymbol] = useState("R_100");
   const [stake, setStake] = useState("1");
   const [duration, setDuration] = useState("1");
@@ -374,22 +370,65 @@ function BotPage() {
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-3 pt-2">
           <div>
-            <Label>Strategy</Label>
-            <Select value={strategy} onValueChange={(v) => setStrategy(v as StrategyType)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent className="max-h-[320px]">
-                {STRATEGIES.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <div className="mt-2 rounded-lg border border-primary/15 bg-primary/5 p-3">
-              <p className="text-xs leading-relaxed">{meta.desc}</p>
-              <div className="mt-2 grid grid-cols-4 gap-2 text-center">
-                <Tiny label="Win" value={`${meta.winRate}%`} />
-                <Tiny label="Risk" value={meta.risk} />
-                <Tiny label="Market" value={meta.market} />
-                <Tiny label="ROI" value={meta.roi} />
-              </div>
+            <Label className="mb-2 block text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">AI Strategy</Label>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {STRATEGIES.map((s) => {
+                const active = strategy === s.id;
+                const Icon = s.icon;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setStrategy(s.id)}
+                    disabled={running}
+                    className={cn(
+                      "group relative overflow-hidden rounded-2xl border p-3 text-left transition-all duration-300",
+                      active
+                        ? "border-primary/60 bg-gradient-to-br from-primary/10 via-background/40 to-accent/10 shadow-[0_0_30px_-8px_oklch(0.82_0.15_85/0.5)] ring-1 ring-primary/40"
+                        : "border-border/50 bg-background/40 hover:border-primary/40 hover:bg-primary/5",
+                    )}
+                  >
+                    {active && <div className="pointer-events-none absolute inset-0 shimmer-gold opacity-20" />}
+                    <div className="relative flex items-start gap-2.5">
+                      <span className={cn(
+                        "grid h-9 w-9 flex-none place-items-center rounded-xl border transition-colors",
+                        s.tone === "primary" && "border-primary/40 bg-primary/10 text-primary",
+                        s.tone === "accent"  && "border-accent/40 bg-accent/10 text-accent",
+                        s.tone === "bull"    && "border-bull/40 bg-bull/10 text-bull",
+                        s.tone === "bear"    && "border-bear/40 bg-bear/10 text-bear",
+                      )}>
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-[13px] font-semibold leading-tight">{s.name}</div>
+                          {active && <Sparkles className="h-3.5 w-3.5 text-primary animate-pulse" />}
+                        </div>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
+                          <span className="text-bull num font-semibold">{s.winRate}% win</span>
+                          <span>·</span>
+                          <span className="num">AI {s.aiConf}%</span>
+                          <span>·</span>
+                          <span>{s.market}</span>
+                        </div>
+                        <div className="mt-1.5 flex items-center gap-1.5">
+                          <span className={cn(
+                            "rounded-full border px-1.5 py-[1px] text-[9px] uppercase tracking-wider",
+                            s.risk === "Low"  && "border-bull/40 text-bull",
+                            s.risk === "Med"  && "border-warning/40 text-warning",
+                            s.risk === "High" && "border-bear/40 text-bear",
+                          )}>{s.risk} risk</span>
+                          <span className="inline-flex items-center gap-0.5 rounded-full border border-primary/30 px-1.5 py-[1px] text-[9px] uppercase tracking-wider text-primary">
+                            <Zap className="h-2.5 w-2.5" />{s.speed}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
+            <p className="mt-2 px-1 text-[11px] leading-relaxed text-muted-foreground">{meta.desc}</p>
           </div>
 
           <div>
@@ -418,8 +457,8 @@ function BotPage() {
             </div>
           </div>
 
-          {strategy === "over_under_ai" && (
-            <div><Label>Barrier (0-9)</Label><Input className="num" value={barrier} onChange={(e) => setBarrier(e.target.value)} /></div>
+          {(strategy === "over_under_ai" || strategy === "matches_differs_ai") && (
+            <div><Label>Barrier digit (0-9)</Label><Input className="num" value={barrier} onChange={(e) => setBarrier(e.target.value)} /></div>
           )}
 
           <div className="grid grid-cols-2 gap-2">
@@ -525,11 +564,4 @@ function BotPage() {
   );
 }
 
-function Tiny({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded border border-border/40 bg-background/30 p-1.5">
-      <div className="text-[9px] uppercase text-muted-foreground">{label}</div>
-      <div className="text-[11px] font-semibold">{value}</div>
-    </div>
-  );
-}
+

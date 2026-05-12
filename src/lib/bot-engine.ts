@@ -6,6 +6,7 @@ export type StrategyType =
   | "rise_fall_ai"
   | "even_odd_ai"
   | "over_under_ai"
+  | "matches_differs_ai"
   | "trend_following"
   | "smart_scalping"
   | "momentum_ai"
@@ -170,6 +171,27 @@ export class BotRunner {
         const over = d.over5;
         if (Math.abs(over - 50) < 8) return null;
         return { contract: over > 50 ? "DIGITOVER" : "DIGITUNDER", barrier };
+      }
+      case "matches_differs_ai": {
+        // Count digit frequencies over recent ticks
+        const digits = this.lastTicks.map((q) =>
+          Number(String(q.toFixed(5)).replace(".", "").slice(-1)),
+        );
+        if (digits.length < 20) return null;
+        const freq = new Array(10).fill(0);
+        for (const d of digits) freq[d]++;
+        let maxIdx = 0, minIdx = 0;
+        for (let i = 1; i < 10; i++) {
+          if (freq[i] > freq[maxIdx]) maxIdx = i;
+          if (freq[i] < freq[minIdx]) minIdx = i;
+        }
+        const expected = digits.length / 10;
+        const maxBias = (freq[maxIdx] - expected) / expected; // >0 hot
+        const minBias = (expected - freq[minIdx]) / expected; // >0 cold
+        // If a digit is clearly hot, bet DIFF against the cold one (statistically rare to repeat)
+        if (maxBias > 0.6) return { contract: "DIGITDIFF", barrier: maxIdx };
+        if (minBias > 0.6) return { contract: "DIGITDIFF", barrier: minIdx };
+        return null;
       }
     }
   }
