@@ -24,6 +24,7 @@ import { AIMarketScanner } from "@/components/AIMarketScanner";
 import { RiskManagementSetup, assessRisk, type RiskValues } from "@/components/RiskManagementSetup";
 import { ActiveTradeMonitor } from "@/components/ActiveTradeMonitor";
 import { cn } from "@/lib/utils";
+import { playBoot, playExecute, playProfit, playLoss, startScanLoop, stopScanLoop, primeAudio } from "@/lib/audio-engine";
 
 export const Route = createFileRoute("/_authenticated/bot")({
   component: BotPage,
@@ -112,6 +113,8 @@ function BotPage() {
   const start = async () => {
     if (!client || !active || !user) { toast.error("Connect a Deriv account first"); return; }
     if (!assessment.valid) { toast.error("Complete risk management setup first"); return; }
+    primeAudio();
+    playBoot();
     setLaunching(true);
     const cfg: StrategyConfig = {
       type: strategy, symbol, stake: Number(stake),
@@ -158,6 +161,8 @@ function BotPage() {
           if (e.state === "scanning" && e.detail) {
             emitBotEvent({ kind: "scan", message: e.detail, symbol });
           }
+          if (e.state === "scanning" || e.state === "waiting_entry") startScanLoop();
+          else stopScanLoop();
         }
         if (e.kind === "analysis") {
           setAnalysis(e.analysis);
@@ -173,6 +178,7 @@ function BotPage() {
         }
         if (e.kind === "trade_open") {
           setActiveTrades((n) => n + 1);
+          playExecute();
           emitBotEvent({
             kind: "open", symbol, contract: e.contract_type,
             confidence: analysis?.confidence,
@@ -182,6 +188,8 @@ function BotPage() {
         if (e.kind === "trade_close") {
           setActiveTrades((n) => Math.max(0, n - 1));
           const profit = e.profit;
+          if (profit > 0) playProfit();
+          else if (profit < 0) playLoss();
           // streak math
           if (profit > 0) {
             streakRef.current = streakRef.current >= 0 ? streakRef.current + 1 : 1;
@@ -237,6 +245,7 @@ function BotPage() {
         if (e.kind === "stopped") {
           log(`Stopped: ${e.reason}`, "info");
           setRunning(false);
+          stopScanLoop();
           emitBotEvent({ kind: "info", message: `Bot stopped · ${e.reason}` });
           setBotStatus({ running: false });
         }
@@ -290,7 +299,7 @@ function BotPage() {
   };
   const emergency = () => { runnerRef.current?.emergency(); toast.error("Emergency stop"); };
 
-  useEffect(() => () => runnerRef.current?.stop("Page closed"), []);
+  useEffect(() => () => { runnerRef.current?.stop("Page closed"); stopScanLoop(); }, []);
 
   // Allow the TP modal "Stop Bot" button to stop the bot from anywhere
   useEffect(() => {
