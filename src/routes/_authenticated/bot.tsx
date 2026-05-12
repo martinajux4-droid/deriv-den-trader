@@ -20,7 +20,8 @@ import {
   Play, Square, Pause, Zap, AlertTriangle, Brain, Shield, Target,
   Activity, Gauge, TrendingUp, TrendingDown,
 } from "lucide-react";
-import { setBotStatus } from "@/hooks/use-bot-status";
+import { setBotStatus, emitBotEvent, emitTakeProfit } from "@/hooks/use-bot-status";
+import { LiveTradeFeed } from "@/components/LiveTradeFeed";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/bot")({
@@ -73,6 +74,12 @@ function BotPage() {
   const [logs, setLogs] = useState<{ t: number; msg: string; tone?: string }[]>([]);
   const [pnl, setPnl] = useState(0);
   const [trades, setTrades] = useState(0);
+  const [wins, setWins] = useState(0);
+  const [losses, setLosses] = useState(0);
+  const [activeTrades, setActiveTrades] = useState(0);
+  const streakRef = useRef(0);
+  const bestStreakRef = useRef(0);
+  const tpFiredRef = useRef(false);
   const runnerRef = useRef<BotRunner | null>(null);
   const runIdRef = useRef<string | null>(null);
 
@@ -104,25 +111,109 @@ function BotPage() {
     runIdRef.current = run?.id ?? null;
 
     setRunning(true); setPaused(false); setLogs([]); setPnl(0); setTrades(0);
-    setBotStatus({ running: true, strategy, symbol, pnl: 0, trades: 0, startedAt: Date.now() });
+    setWins(0); setLosses(0); setActiveTrades(0);
+    streakRef.current = 0; bestStreakRef.current = 0; tpFiredRef.current = false;
+    const baseEquity = balance?.balance ?? 0;
+    const accountType: "Demo" | "Real" = active.is_virtual ? "Demo" : "Real";
+    setBotStatus({
+      running: true, paused: false, strategy, symbol,
+      pnl: 0, trades: 0, wins: 0, losses: 0, streak: 0, bestStreak: 0, peak: 0,
+      baseEquity, currency: balance?.currency || "USD",
+      takeProfit: Number(tp) || undefined, stopLoss: Number(sl) || undefined,
+      confidence: 0, direction: "WAIT", activeTrades: 0,
+      accountType, loginid: active.loginid, startedAt: Date.now(),
+    });
+    emitBotEvent({ kind: "info", message: `Bot online · ${strategy} on ${symbol} · ${accountType} account`, symbol });
 
     const runner = new BotRunner(
       client, cfg, balance?.currency || "USD",
       (e) => {
         if (e.kind === "log") log(e.msg, e.level);
-        if (e.kind === "state") { setState(e.state); setStateDetail(e.detail || ""); }
-        if (e.kind === "analysis") setAnalysis(e.analysis);
+        if (e.kind === "state") {
+          setState(e.state); setStateDetail(e.detail || "");
+          if (e.state === "scanning" && e.detail) {
+            emitBotEvent({ kind: "scan", message: e.detail, symbol });
+          }
+        }
+        if (e.kind === "analysis") {
+          setAnalysis(e.analysis);
+          setBotStatus({
+            running: true, paused, strategy, symbol,
+            pnl, trades, wins, losses,
+            streak: streakRef.current, bestStreak: bestStreakRef.current,
+            baseEquity, currency: balance?.currency || "USD",
+            takeProfit: Number(tp) || undefined, stopLoss: Number(sl) || undefined,
+            confidence: e.analysis.confidence, direction: e.analysis.recommendation,
+            activeTrades, accountType, loginid: active.loginid, startedAt: Date.now(),
+          });
+        }
+        if (e.kind === "trade_open") {
+          setActiveTrades((n) => n + 1);
+          emitBotEvent({
+            kind: "open", symbol, contract: e.contract_type,
+            confidence: analysis?.confidence,
+            message: `Opened ${e.contract_type} · stake ${e.stake.toFixed(2)} ${balance?.currency || ""}`,
+          });
+        }
         if (e.kind === "trade_close") {
+          setActiveTrades((n) => Math.max(0, n - 1));
+          const profit = e.profit;
+          // streak math
+          if (profit > 0) {
+            streakRef.current = streakRef.current >= 0 ? streakRef.current + 1 : 1;
+          } else if (profit < 0) {
+            streakRef.current = streakRef.current <= 0 ? streakRef.current - 1 : -1;
+          }
+          if (Math.abs(streakRef.current) > Math.abs(bestStreakRef.current)) {
+            bestStreakRef.current = streakRef.current;
+          }
+          setWins((w) => w + (profit > 0 ? 1 : 0));
+          setLosses((l) => l + (profit < 0 ? 1 : 0));
+          setTrades((t) => t + 1);
           setPnl((p) => {
-            const np = p + e.profit;
-            setBotStatus({ running: true, strategy, symbol, pnl: np, trades: trades + 1, startedAt: Date.now() });
+            const np = p + profit;
+            const newWins = wins + (profit > 0 ? 1 : 0);
+            const newLosses = losses + (profit < 0 ? 1 : 0);
+            const newTrades = trades + 1;
+            setBotStatus({
+              running: true, paused, strategy, symbol,
+              pnl: np, trades: newTrades, wins: newWins, losses: newLosses,
+              streak: streakRef.current, bestStreak: bestStreakRef.current,
+              baseEquity, currency: balance?.currency || "USD",
+              takeProfit: Number(tp) || undefined, stopLoss: Number(sl) || undefined,
+              confidence: analysis?.confidence ?? 0, direction: analysis?.recommendation ?? "WAIT",
+              activeTrades: Math.max(0, activeTrades - 1),
+              accountType, loginid: active.loginid, startedAt: Date.now(),
+            });
+            // TP / SL fire
+            const tpV = Number(tp);
+            if (!tpFiredRef.current && tpV > 0 && np >= tpV) {
+              tpFiredRef.current = true;
+              emitBotEvent({ kind: "tp", symbol, message: `Take profit hit at ${np.toFixed(2)}`, profit: np });
+              emitTakeProfit({
+                ts: Date.now(), pnl: np,
+                roi: baseEquity > 0 ? (np / baseEquity) * 100 : 0,
+                trades: newTrades, wins: newWins, losses: newLosses,
+                strategy, symbol, confidence: analysis?.confidence ?? 0,
+                currency: balance?.currency || "USD", accountType, reason: "take_profit",
+              });
+            }
+            const slV = Number(sl);
+            if (slV > 0 && np <= -slV) {
+              emitBotEvent({ kind: "sl", symbol, message: `Stop loss reached at ${np.toFixed(2)}`, profit: np });
+            }
             return np;
           });
-          setTrades((t) => t + 1);
+          emitBotEvent({
+            kind: profit >= 0 ? "won" : "lost", symbol,
+            profit, confidence: analysis?.confidence,
+            message: profit >= 0 ? `Trade won · cum ${(pnl + profit).toFixed(2)}` : `Trade lost · cum ${(pnl + profit).toFixed(2)}`,
+          });
         }
         if (e.kind === "stopped") {
           log(`Stopped: ${e.reason}`, "info");
           setRunning(false);
+          emitBotEvent({ kind: "info", message: `Bot stopped · ${e.reason}` });
           setBotStatus({ running: false });
         }
       },
@@ -176,6 +267,13 @@ function BotPage() {
   const emergency = () => { runnerRef.current?.emergency(); toast.error("Emergency stop"); };
 
   useEffect(() => () => runnerRef.current?.stop("Page closed"), []);
+
+  // Allow the TP modal "Stop Bot" button to stop the bot from anywhere
+  useEffect(() => {
+    const onStop = () => runnerRef.current?.stop("Stopped from celebration");
+    window.addEventListener("hifex:bot-stop", onStop);
+    return () => window.removeEventListener("hifex:bot-stop", onStop);
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -370,29 +468,7 @@ function BotPage() {
             )}
           </Card>
 
-          <Card className="p-0">
-            <div className="border-b border-border/60 px-4 py-2 text-xs uppercase tracking-wider text-muted-foreground">
-              Activity log
-            </div>
-            <div className="max-h-[320px] overflow-auto">
-              {logs.length === 0 ? (
-                <div className="p-4 text-xs text-muted-foreground">No activity yet. Start the bot.</div>
-              ) : (
-                <ul className="divide-y divide-border text-xs">
-                  {logs.map((l, i) => (
-                    <li key={i} className="flex gap-3 px-3 py-2">
-                      <span className="num text-muted-foreground">{new Date(l.t).toLocaleTimeString()}</span>
-                      <span className={cn(
-                        l.tone === "good" && "text-bull",
-                        l.tone === "bad" && "text-bear",
-                        l.tone === "warn" && "text-warning",
-                      )}>{l.msg}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </Card>
+          <LiveTradeFeed />
         </div>
       </div>
     </div>
