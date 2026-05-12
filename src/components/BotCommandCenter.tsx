@@ -4,6 +4,7 @@ import type { Analysis } from "@/lib/ai-analysis";
 import type { BotState } from "@/lib/bot-engine";
 import { Button } from "@/components/ui/button";
 import { useAnimatedNumber } from "@/hooks/use-animated-number";
+import { LiveTradeRail } from "@/components/LiveTradeRail";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -189,6 +190,11 @@ export function BotCommandCenter(p: Props) {
         <Metric icon={<Shield className="h-3.5 w-3.5" />} label="Risk Score"
           value={p.analysis ? `${p.analysis.riskScore}%` : "—"} bar={p.analysis?.riskScore} tone="warn" />
       </div>
+
+      {/* LIVE TRADE RAIL — entry · current · target · timer · status */}
+      {(p.running || p.activeTrades > 0) && (
+        <LiveTradeRail running={p.running} confidence={p.analysis?.confidence} />
+      )}
 
       {/* High-signal banner */}
       {highSignal && p.analysis && (
