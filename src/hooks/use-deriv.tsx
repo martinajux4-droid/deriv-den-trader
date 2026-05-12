@@ -32,7 +32,7 @@ type DerivCtx = {
   setActive: (acc: DerivAccount) => Promise<void>;
 };
 
-const DEFAULT_APP_ID = "33fqoeBk3EYm24kiFofTH";
+const DEFAULT_APP_ID = "68610";
 
 const Ctx = createContext<DerivCtx>({
   client: null, status: "idle", accounts: [], active: null, balance: null,
