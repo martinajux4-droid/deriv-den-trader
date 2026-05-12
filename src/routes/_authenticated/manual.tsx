@@ -1,5 +1,6 @@
 import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
-import { Sigma, Layers, Hash, TrendingUp } from "lucide-react";
+import { Sigma, Layers, Hash, TrendingUp, Shuffle, Briefcase } from "lucide-react";
+import { StrategyDock } from "@/components/manual/StrategyDock";
 
 export const Route = createFileRoute("/_authenticated/manual")({
   component: ManualLayout,
@@ -10,13 +11,24 @@ const STRATS = [
   { to: "/manual/over-under",      title: "Over / Under",      desc: "Digit threshold prediction",  icon: Layers,     accent: "var(--meter-momentum)" },
   { to: "/manual/matches-differs", title: "Matches / Differs", desc: "Digit pattern recognition",   icon: Hash,       accent: "var(--meter-ai)" },
   { to: "/manual/rise-fall",       title: "Rise / Fall",       desc: "Directional momentum trades", icon: TrendingUp, accent: "var(--meter-bear)" },
+  { to: "/manual/under-digit",     title: "Under / Digit",     desc: "Smart digit prediction matrix", icon: Shuffle,  accent: "oklch(0.78 0.16 320)" },
+  { to: "/manual/cfd",             title: "CFD Terminal",      desc: "Multi-asset CFD engine (soon)", icon: Briefcase, accent: "oklch(0.82 0.15 85)" },
 ];
 
 function ManualLayout() {
   const { pathname } = useLocation();
-  if (pathname !== "/manual") return <Outlet />;
+  if (pathname !== "/manual") {
+    return (
+      <>
+        <div key={pathname} className="animate-fade-in">
+          <Outlet />
+        </div>
+        <StrategyDock />
+      </>
+    );
+  }
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-28">
       <div className="glass-card relative overflow-hidden p-5 md:p-7">
         <div className="absolute inset-0 bg-mesh-anim opacity-40" />
         <div className="relative">
@@ -30,7 +42,7 @@ function ManualLayout() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {STRATS.map((s) => (
           <Link key={s.to} to={s.to} className="glass-card group relative overflow-hidden p-5 transition-all hover:scale-[1.01]">
             <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full opacity-30 blur-3xl transition-opacity group-hover:opacity-60"
@@ -51,6 +63,7 @@ function ManualLayout() {
           </Link>
         ))}
       </div>
+      <StrategyDock />
     </div>
   );
 }
