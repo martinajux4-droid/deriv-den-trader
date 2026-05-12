@@ -20,6 +20,7 @@ import { setBotStatus, emitBotEvent, emitTakeProfit } from "@/hooks/use-bot-stat
 import { LiveTradeFeed } from "@/components/LiveTradeFeed";
 import { BotLaunchOverlay } from "@/components/BotLaunchOverlay";
 import { BotCommandCenter } from "@/components/BotCommandCenter";
+import { RiskManagementSetup, assessRisk, type RiskValues } from "@/components/RiskManagementSetup";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/bot")({
@@ -63,6 +64,7 @@ function BotPage() {
   const [riskMode, setRiskMode] = useState<RiskMode>("normal");
   const [stakeMode, setStakeMode] = useState<StakeMode>("smart");
   const [minConfidence, setMinConfidence] = useState("70");
+  const [dailyLossLimit, setDailyLossLimit] = useState("25");
 
   const [running, setRunning] = useState(false);
   const [paused, setPaused] = useState(false);
@@ -85,11 +87,33 @@ function BotPage() {
 
   const meta = useMemo(() => STRATEGIES.find((s) => s.id === strategy)!, [strategy]);
 
+  const riskValues: RiskValues = {
+    stake, takeProfit: tp, stopLoss: sl, maxTrades, riskMode, minConfidence,
+    dailyLossLimit, maxConsecLosses,
+  };
+  const assessment = useMemo(
+    () => assessRisk(riskValues, balance?.balance),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [stake, tp, sl, maxTrades, riskMode, minConfidence, dailyLossLimit, maxConsecLosses, balance?.balance],
+  );
+
+  const onRiskChange = (patch: Partial<RiskValues>) => {
+    if (patch.stake !== undefined) setStake(patch.stake);
+    if (patch.takeProfit !== undefined) setTp(patch.takeProfit);
+    if (patch.stopLoss !== undefined) setSl(patch.stopLoss);
+    if (patch.maxTrades !== undefined) setMaxTrades(patch.maxTrades);
+    if (patch.riskMode !== undefined) setRiskMode(patch.riskMode);
+    if (patch.minConfidence !== undefined) setMinConfidence(patch.minConfidence);
+    if (patch.dailyLossLimit !== undefined) setDailyLossLimit(patch.dailyLossLimit);
+    if (patch.maxConsecLosses !== undefined) setMaxConsecLosses(patch.maxConsecLosses);
+  };
+
   const log = (msg: string, tone?: string) =>
     setLogs((l) => [{ t: Date.now(), msg, tone }, ...l].slice(0, 200));
 
   const start = async () => {
     if (!client || !active || !user) { toast.error("Connect a Deriv account first"); return; }
+    if (!assessment.valid) { toast.error("Complete risk management setup first"); return; }
     setLaunching(true);
     const cfg: StrategyConfig = {
       type: strategy, symbol, stake: Number(stake),
@@ -101,6 +125,7 @@ function BotPage() {
       max_trades: Number(maxTrades) || undefined,
       max_drawdown: Number(maxDrawdown) || undefined,
       max_consecutive_losses: Number(maxConsecLosses) || undefined,
+      daily_loss_limit: Number(dailyLossLimit) || undefined,
       risk_mode: riskMode,
       stake_mode: stakeMode,
       min_confidence: Number(minConfidence) || 65,
@@ -289,6 +314,16 @@ function BotPage() {
         </div>
       </div>
 
+      {/* RISK MANAGEMENT — required before start */}
+      <RiskManagementSetup
+        values={riskValues}
+        onChange={onRiskChange}
+        balance={balance?.balance}
+        currency={balance?.currency || "USD"}
+        assessment={assessment}
+        locked={running}
+      />
+
       {/* HERO COMMAND CENTER */}
       <BotCommandCenter
         running={running}
@@ -305,6 +340,14 @@ function BotPage() {
         currency={balance?.currency || "USD"}
         analysis={analysis}
         canStart={!!(client && active && user)}
+        riskValidated={assessment.valid}
+        riskLabel={assessment.label}
+        protection={{
+          dailyRemaining: Math.max(0, Number(dailyLossLimit) + Math.min(0, pnl)),
+          drawdown: Math.min(0, pnl),
+          exposure: Number(stake) || 0,
+          currency: balance?.currency || "USD",
+        }}
         onStart={start}
         onPause={togglePause}
         onStop={stop}

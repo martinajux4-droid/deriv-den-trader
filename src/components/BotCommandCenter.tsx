@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Brain, TrendingUp, TrendingDown, Activity, Gauge, Pause, Play, Square, Zap, Sparkles, Target, Shield } from "lucide-react";
+import { Brain, TrendingUp, TrendingDown, Activity, Gauge, Pause, Play, Square, Zap, Sparkles, Shield, Lock, ShieldCheck, AlertTriangle } from "lucide-react";
 import type { Analysis } from "@/lib/ai-analysis";
 import type { BotState } from "@/lib/bot-engine";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,14 @@ type Props = {
   currency: string;
   analysis: Analysis | null;
   canStart: boolean;
+  riskValidated: boolean;
+  riskLabel?: string;
+  protection?: {
+    dailyRemaining: number;
+    drawdown: number;
+    exposure: number;
+    currency: string;
+  };
   onStart: () => void;
   onPause: () => void;
   onStop: () => void;
@@ -110,14 +118,27 @@ export function BotCommandCenter(p: Props) {
             <>
               <Button
                 onClick={p.onStart}
-                disabled={!p.canStart}
+                disabled={!p.canStart || !p.riskValidated}
                 size="lg"
-                className="h-16 w-full bg-gold-gradient text-primary-foreground text-base font-semibold shadow-[0_10px_40px_-10px_oklch(0.82_0.15_85/0.6)] hover:opacity-95 animate-pulse-glow"
+                className={cn(
+                  "h-16 w-full text-base font-semibold transition-all",
+                  p.riskValidated && p.canStart
+                    ? "bg-gradient-to-r from-bull to-bull/80 text-bull-foreground shadow-[0_10px_40px_-10px_oklch(0.74_0.18_150/0.7)] hover:opacity-95 animate-pulse-glow"
+                    : "bg-muted/40 text-muted-foreground cursor-not-allowed"
+                )}
               >
-                <Play className="mr-2 h-5 w-5" /> Start AI Bot
+                {p.riskValidated && p.canStart ? (
+                  <><ShieldCheck className="mr-2 h-5 w-5" /> Start AI Bot · Protected</>
+                ) : (
+                  <><Lock className="mr-2 h-5 w-5" /> Locked · complete risk setup</>
+                )}
               </Button>
               <p className="text-center text-[11px] text-muted-foreground">
-                {p.canStart ? "One click. AI handles the rest." : "Connect a Deriv account to begin."}
+                {!p.canStart
+                  ? "Connect a Deriv account to begin."
+                  : p.riskValidated
+                    ? `${p.riskLabel || "AI verified"} · one click and the bot trades for you`
+                    : "Fill the Risk Management card above to unlock."}
               </p>
             </>
           ) : (
@@ -135,6 +156,24 @@ export function BotCommandCenter(p: Props) {
           )}
         </div>
       </div>
+
+      {/* LIVE PROTECTION CHIPS */}
+      {p.running && p.protection && (
+        <div className="relative mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <ProtectionChip icon={<ShieldCheck className="h-3.5 w-3.5" />} label="Safe Mode" value="ACTIVE" tone="bull" pulse />
+          <ProtectionChip
+            icon={<Shield className="h-3.5 w-3.5" />} label="Daily loss remaining"
+            value={`${p.protection.dailyRemaining.toFixed(2)} ${p.protection.currency}`}
+            tone={p.protection.dailyRemaining > 0 ? "primary" : "bear"}
+          />
+          <ProtectionChip
+            icon={<AlertTriangle className="h-3.5 w-3.5" />} label="Current drawdown"
+            value={`${p.protection.drawdown.toFixed(2)} ${p.protection.currency}`}
+            tone={p.protection.drawdown < 0 ? "warn" : "bull"}
+          />
+          <ProtectionChip icon={<Brain className="h-3.5 w-3.5" />} label="AI Defense" value="ENABLED" tone="primary" pulse />
+        </div>
+      )}
 
       {/* AI READ */}
       <div className="relative mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -172,6 +211,27 @@ export function BotCommandCenter(p: Props) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ProtectionChip({ icon, label, value, tone, pulse }: {
+  icon: React.ReactNode; label: string; value: string;
+  tone: "bull" | "bear" | "warn" | "primary"; pulse?: boolean;
+}) {
+  const map = {
+    bull: "border-bull/40 bg-bull/8 text-bull",
+    bear: "border-bear/40 bg-bear/10 text-bear",
+    warn: "border-warning/40 bg-warning/10 text-warning",
+    primary: "border-primary/40 bg-primary/8 text-primary",
+  } as const;
+  return (
+    <div className={cn("flex items-center gap-2 rounded-xl border px-3 py-2 backdrop-blur-sm", map[tone])}>
+      <span className={cn("grid h-7 w-7 place-items-center rounded-lg bg-background/40", pulse && "animate-pulse")}>{icon}</span>
+      <div className="min-w-0">
+        <div className="text-[9px] uppercase tracking-widest text-muted-foreground">{label}</div>
+        <div className="num truncate text-[12px] font-semibold">{value}</div>
+      </div>
     </div>
   );
 }
