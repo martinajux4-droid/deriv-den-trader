@@ -22,6 +22,7 @@ import { BotLaunchOverlay } from "@/components/BotLaunchOverlay";
 import { BotCommandCenter } from "@/components/BotCommandCenter";
 import { AIMarketScanner } from "@/components/AIMarketScanner";
 import { RiskManagementSetup, assessRisk, type RiskValues } from "@/components/RiskManagementSetup";
+import { ActiveTradeMonitor } from "@/components/ActiveTradeMonitor";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/bot")({
@@ -350,6 +351,9 @@ function BotPage() {
         onStop={stop}
         onEmergency={emergency}
       />
+
+      {/* ACTIVE TRADE MONITOR — institutional entry/exit tracking */}
+      <ActiveTradeMonitor />
 
       {/* TWO-COLUMN: settings (collapsible) + live feed */}
       <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
