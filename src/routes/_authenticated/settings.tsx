@@ -12,6 +12,7 @@ import { DERIV_SYMBOLS } from "@/lib/deriv-symbols";
 import { toast } from "sonner";
 import { ConnectDeriv } from "@/components/ConnectDeriv";
 import { Trash2 } from "lucide-react";
+import { SoundSettingsCard } from "@/components/SoundSettings";
 
 export const Route = createFileRoute("/_authenticated/settings")({ component: Settings });
 
@@ -88,6 +89,8 @@ function Settings() {
           </ul>
         )}
       </Card>
+
+      <SoundSettingsCard />
     </div>
   );
 }
