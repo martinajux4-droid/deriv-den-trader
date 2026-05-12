@@ -20,6 +20,7 @@ import { setBotStatus, emitBotEvent, emitTakeProfit } from "@/hooks/use-bot-stat
 import { LiveTradeFeed } from "@/components/LiveTradeFeed";
 import { BotLaunchOverlay } from "@/components/BotLaunchOverlay";
 import { BotCommandCenter } from "@/components/BotCommandCenter";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/bot")({
   component: BotPage,
@@ -463,6 +464,15 @@ function BotPage() {
           <LiveTradeFeed />
         </div>
       </div>
+    </div>
+  );
+}
+
+function Tiny({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded border border-border/40 bg-background/30 p-1.5">
+      <div className="text-[9px] uppercase text-muted-foreground">{label}</div>
+      <div className="text-[11px] font-semibold">{value}</div>
     </div>
   );
 }
