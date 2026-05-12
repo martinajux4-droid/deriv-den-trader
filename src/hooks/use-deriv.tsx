@@ -32,9 +32,11 @@ type DerivCtx = {
   setActive: (acc: DerivAccount) => Promise<void>;
 };
 
+const DEFAULT_APP_ID = "33fqoeBk3EYm24kiFofTH";
+
 const Ctx = createContext<DerivCtx>({
   client: null, status: "idle", accounts: [], active: null, balance: null,
-  profile: null, appId: "1089", reload: async () => {}, setActive: async () => {},
+  profile: null, appId: DEFAULT_APP_ID, reload: async () => {}, setActive: async () => {},
 });
 
 export function DerivProvider({ children }: { children: ReactNode }) {
@@ -47,7 +49,7 @@ export function DerivProvider({ children }: { children: ReactNode }) {
   const clientRef = useRef<DerivClient | null>(null);
   const balanceUnsubRef = useRef<null | (() => void)>(null);
 
-  const appId = profile?.deriv_app_id || "1089";
+  const appId = profile?.deriv_app_id || DEFAULT_APP_ID;
 
   // build/replace client when appId changes
   useEffect(() => {
