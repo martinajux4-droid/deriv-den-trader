@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Cpu, Activity, Gauge } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useDeriv } from "@/hooks/use-deriv";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,8 +16,10 @@ import { EvenOddDial } from "./meters/EvenOddDial";
 import { OverUnderHistogram } from "./meters/OverUnderHistogram";
 import { DigitFrequencyMatrix } from "./meters/DigitFrequencyMatrix";
 import { RiseFallPressure } from "./meters/RiseFallPressure";
+import { useTicks } from "@/hooks/use-ticks";
+import { analyze } from "@/lib/ai-analysis";
 
-export type StrategyId = "even-odd" | "over-under" | "matches-differs" | "rise-fall";
+export type StrategyId = "even-odd" | "over-under" | "matches-differs" | "rise-fall" | "under-digit";
 
 const STRATEGY: Record<StrategyId, {
   title: string; subtitle: string;
@@ -33,12 +35,14 @@ const STRATEGY: Record<StrategyId, {
   "over-under":       { title: "Over / Under",      subtitle: "Digit threshold prediction", contracts: ["DIGITOVER", "DIGITUNDER"], labels: ["OVER", "UNDER"],     needsBarrier: true,  showDigit: true,  accent: "var(--meter-momentum)", accentBg: "oklch(0.82 0.16 200 / 0.16)", accentLabel: "Threshold AI" },
   "matches-differs":  { title: "Matches / Differs", subtitle: "Digit pattern recognition",  contracts: ["DIGITMATCH", "DIGITDIFF"], labels: ["MATCHES", "DIFFERS"], needsBarrier: true,  showDigit: true,  accent: "var(--meter-ai)",       accentBg: "oklch(0.86 0.14 90 / 0.16)",  accentLabel: "Pattern AI" },
   "rise-fall":        { title: "Rise / Fall",       subtitle: "Directional momentum trades", contracts: ["CALL", "PUT"], labels: ["RISE", "FALL"],                 needsBarrier: false, showDigit: false, accent: "var(--meter-bear)",     accentBg: "oklch(0.65 0.22 25 / 0.14)",  accentLabel: "Momentum AI" },
+  "under-digit":      { title: "Under / Digit",     subtitle: "Smart digit prediction matrix", contracts: ["DIGITUNDER", "DIGITOVER"], labels: ["UNDER", "OVER"],     needsBarrier: true,  showDigit: true,  accent: "oklch(0.78 0.16 320)",  accentBg: "oklch(0.78 0.16 320 / 0.16)", accentLabel: "Predictive AI" },
 };
 
 function Meter({ id, symbol, digit }: { id: StrategyId; symbol: string; digit: number }) {
   if (id === "even-odd") return <EvenOddDial symbol={symbol} />;
   if (id === "over-under") return <OverUnderHistogram symbol={symbol} barrier={digit} />;
   if (id === "matches-differs") return <DigitFrequencyMatrix symbol={symbol} target={digit} />;
+  if (id === "under-digit") return <DigitFrequencyMatrix symbol={symbol} target={digit} />;
   return <RiseFallPressure symbol={symbol} />;
 }
 
@@ -153,8 +157,14 @@ export function StrategyPage({ id }: { id: StrategyId }) {
 
   const headerAccent = useMemo(() => ({ background: meta.accentBg, color: meta.accent }), [meta]);
 
+  // Header live status
+  const headerTicks = useTicks(symbol, 60);
+  const headerAnalysis = analyze(headerTicks.map((t) => t.quote));
+  const ready = (headerAnalysis?.entryScore ?? 0) >= 60 && (headerAnalysis?.confidence ?? 0) >= 70;
+  const vol = headerAnalysis?.volatility ?? 0;
+
   return (
-    <div className="space-y-4 pb-24 md:pb-4">
+    <div className="animate-fade-in space-y-4 pb-28 md:pb-28">
       {/* Header */}
       <div className="glass-card p-4 md:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -165,6 +175,10 @@ export function StrategyPage({ id }: { id: StrategyId }) {
             <div>
               <div className="flex items-center gap-2">
                 <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em]" style={headerAccent}>{meta.accentLabel}</span>
+                <span className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${ready ? "border-bull/40 bg-bull/10 text-bull" : "border-white/10 bg-white/[0.02] text-muted-foreground"}`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${ready ? "bg-bull animate-pulse" : "bg-muted-foreground"}`} />
+                  {ready ? "Engine ready" : "Calibrating"}
+                </span>
               </div>
               <h1 className="mt-1 text-2xl font-semibold tracking-tight">{meta.title}</h1>
               <p className="text-xs text-muted-foreground">{meta.subtitle}</p>
@@ -177,6 +191,20 @@ export function StrategyPage({ id }: { id: StrategyId }) {
                 {DERIV_SYMBOLS.map((s) => <SelectItem key={s.symbol} value={s.symbol}>{s.name}</SelectItem>)}
               </SelectContent>
             </Select>
+          </div>
+        </div>
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          <div className="rounded-lg border border-white/5 bg-white/[0.02] px-2.5 py-1.5">
+            <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground"><Cpu className="h-2.5 w-2.5" />AI engine</div>
+            <div className="text-xs font-semibold" style={{ color: meta.accent }}>{meta.accentLabel}</div>
+          </div>
+          <div className="rounded-lg border border-white/5 bg-white/[0.02] px-2.5 py-1.5">
+            <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground"><Activity className="h-2.5 w-2.5" />Market readiness</div>
+            <div className="text-xs num font-semibold">{headerAnalysis?.entryScore ?? 0}/100</div>
+          </div>
+          <div className="rounded-lg border border-white/5 bg-white/[0.02] px-2.5 py-1.5">
+            <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground"><Gauge className="h-2.5 w-2.5" />Volatility</div>
+            <div className={`text-xs num font-semibold ${vol >= 70 ? "text-bear" : vol >= 40 ? "text-warning" : "text-bull"}`}>{vol.toFixed(0)}%</div>
           </div>
         </div>
         <div className="mt-4 border-t border-white/5 pt-4">
