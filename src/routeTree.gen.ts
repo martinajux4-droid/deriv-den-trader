@@ -19,10 +19,12 @@ import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedBotRouteImport } from './routes/_authenticated/bot'
 import { Route as AuthDerivCallbackRouteImport } from './routes/auth.deriv.callback'
+import { Route as AuthenticatedManualUnderDigitRouteImport } from './routes/_authenticated/manual.under-digit'
 import { Route as AuthenticatedManualRiseFallRouteImport } from './routes/_authenticated/manual.rise-fall'
 import { Route as AuthenticatedManualOverUnderRouteImport } from './routes/_authenticated/manual.over-under'
 import { Route as AuthenticatedManualMatchesDiffersRouteImport } from './routes/_authenticated/manual.matches-differs'
 import { Route as AuthenticatedManualEvenOddRouteImport } from './routes/_authenticated/manual.even-odd'
+import { Route as AuthenticatedManualCfdRouteImport } from './routes/_authenticated/manual.cfd'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -73,6 +75,12 @@ const AuthDerivCallbackRoute = AuthDerivCallbackRouteImport.update({
   path: '/auth/deriv/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedManualUnderDigitRoute =
+  AuthenticatedManualUnderDigitRouteImport.update({
+    id: '/under-digit',
+    path: '/under-digit',
+    getParentRoute: () => AuthenticatedManualRoute,
+  } as any)
 const AuthenticatedManualRiseFallRoute =
   AuthenticatedManualRiseFallRouteImport.update({
     id: '/rise-fall',
@@ -97,6 +105,11 @@ const AuthenticatedManualEvenOddRoute =
     path: '/even-odd',
     getParentRoute: () => AuthenticatedManualRoute,
   } as any)
+const AuthenticatedManualCfdRoute = AuthenticatedManualCfdRouteImport.update({
+  id: '/cfd',
+  path: '/cfd',
+  getParentRoute: () => AuthenticatedManualRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -107,10 +120,12 @@ export interface FileRoutesByFullPath {
   '/manual': typeof AuthenticatedManualRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/trade': typeof AuthenticatedTradeRoute
+  '/manual/cfd': typeof AuthenticatedManualCfdRoute
   '/manual/even-odd': typeof AuthenticatedManualEvenOddRoute
   '/manual/matches-differs': typeof AuthenticatedManualMatchesDiffersRoute
   '/manual/over-under': typeof AuthenticatedManualOverUnderRoute
   '/manual/rise-fall': typeof AuthenticatedManualRiseFallRoute
+  '/manual/under-digit': typeof AuthenticatedManualUnderDigitRoute
   '/auth/deriv/callback': typeof AuthDerivCallbackRoute
 }
 export interface FileRoutesByTo {
@@ -122,10 +137,12 @@ export interface FileRoutesByTo {
   '/manual': typeof AuthenticatedManualRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/trade': typeof AuthenticatedTradeRoute
+  '/manual/cfd': typeof AuthenticatedManualCfdRoute
   '/manual/even-odd': typeof AuthenticatedManualEvenOddRoute
   '/manual/matches-differs': typeof AuthenticatedManualMatchesDiffersRoute
   '/manual/over-under': typeof AuthenticatedManualOverUnderRoute
   '/manual/rise-fall': typeof AuthenticatedManualRiseFallRoute
+  '/manual/under-digit': typeof AuthenticatedManualUnderDigitRoute
   '/auth/deriv/callback': typeof AuthDerivCallbackRoute
 }
 export interface FileRoutesById {
@@ -139,10 +156,12 @@ export interface FileRoutesById {
   '/_authenticated/manual': typeof AuthenticatedManualRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/trade': typeof AuthenticatedTradeRoute
+  '/_authenticated/manual/cfd': typeof AuthenticatedManualCfdRoute
   '/_authenticated/manual/even-odd': typeof AuthenticatedManualEvenOddRoute
   '/_authenticated/manual/matches-differs': typeof AuthenticatedManualMatchesDiffersRoute
   '/_authenticated/manual/over-under': typeof AuthenticatedManualOverUnderRoute
   '/_authenticated/manual/rise-fall': typeof AuthenticatedManualRiseFallRoute
+  '/_authenticated/manual/under-digit': typeof AuthenticatedManualUnderDigitRoute
   '/auth/deriv/callback': typeof AuthDerivCallbackRoute
 }
 export interface FileRouteTypes {
@@ -156,10 +175,12 @@ export interface FileRouteTypes {
     | '/manual'
     | '/settings'
     | '/trade'
+    | '/manual/cfd'
     | '/manual/even-odd'
     | '/manual/matches-differs'
     | '/manual/over-under'
     | '/manual/rise-fall'
+    | '/manual/under-digit'
     | '/auth/deriv/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -171,10 +192,12 @@ export interface FileRouteTypes {
     | '/manual'
     | '/settings'
     | '/trade'
+    | '/manual/cfd'
     | '/manual/even-odd'
     | '/manual/matches-differs'
     | '/manual/over-under'
     | '/manual/rise-fall'
+    | '/manual/under-digit'
     | '/auth/deriv/callback'
   id:
     | '__root__'
@@ -187,10 +210,12 @@ export interface FileRouteTypes {
     | '/_authenticated/manual'
     | '/_authenticated/settings'
     | '/_authenticated/trade'
+    | '/_authenticated/manual/cfd'
     | '/_authenticated/manual/even-odd'
     | '/_authenticated/manual/matches-differs'
     | '/_authenticated/manual/over-under'
     | '/_authenticated/manual/rise-fall'
+    | '/_authenticated/manual/under-digit'
     | '/auth/deriv/callback'
   fileRoutesById: FileRoutesById
 }
@@ -273,6 +298,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDerivCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/manual/under-digit': {
+      id: '/_authenticated/manual/under-digit'
+      path: '/under-digit'
+      fullPath: '/manual/under-digit'
+      preLoaderRoute: typeof AuthenticatedManualUnderDigitRouteImport
+      parentRoute: typeof AuthenticatedManualRoute
+    }
     '/_authenticated/manual/rise-fall': {
       id: '/_authenticated/manual/rise-fall'
       path: '/rise-fall'
@@ -301,22 +333,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedManualEvenOddRouteImport
       parentRoute: typeof AuthenticatedManualRoute
     }
+    '/_authenticated/manual/cfd': {
+      id: '/_authenticated/manual/cfd'
+      path: '/cfd'
+      fullPath: '/manual/cfd'
+      preLoaderRoute: typeof AuthenticatedManualCfdRouteImport
+      parentRoute: typeof AuthenticatedManualRoute
+    }
   }
 }
 
 interface AuthenticatedManualRouteChildren {
+  AuthenticatedManualCfdRoute: typeof AuthenticatedManualCfdRoute
   AuthenticatedManualEvenOddRoute: typeof AuthenticatedManualEvenOddRoute
   AuthenticatedManualMatchesDiffersRoute: typeof AuthenticatedManualMatchesDiffersRoute
   AuthenticatedManualOverUnderRoute: typeof AuthenticatedManualOverUnderRoute
   AuthenticatedManualRiseFallRoute: typeof AuthenticatedManualRiseFallRoute
+  AuthenticatedManualUnderDigitRoute: typeof AuthenticatedManualUnderDigitRoute
 }
 
 const AuthenticatedManualRouteChildren: AuthenticatedManualRouteChildren = {
+  AuthenticatedManualCfdRoute: AuthenticatedManualCfdRoute,
   AuthenticatedManualEvenOddRoute: AuthenticatedManualEvenOddRoute,
   AuthenticatedManualMatchesDiffersRoute:
     AuthenticatedManualMatchesDiffersRoute,
   AuthenticatedManualOverUnderRoute: AuthenticatedManualOverUnderRoute,
   AuthenticatedManualRiseFallRoute: AuthenticatedManualRiseFallRoute,
+  AuthenticatedManualUnderDigitRoute: AuthenticatedManualUnderDigitRoute,
 }
 
 const AuthenticatedManualRouteWithChildren =
@@ -353,3 +396,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
