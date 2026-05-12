@@ -25,7 +25,7 @@ export function AppShell() {
       <aside className="hidden w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar p-4 md:flex">
         <Link to="/dashboard" className="flex items-center gap-2 px-2 py-1">
           <div className="grid h-8 w-8 place-items-center rounded-md bg-primary text-primary-foreground font-bold">D</div>
-          <span className="font-semibold tracking-tight">DerivFlow</span>
+          <span className="font-semibold tracking-tight">Hifex Trader AI</span>
         </Link>
         <nav className="mt-6 space-y-1">
           {NAV.map(({ to, label, icon: Icon }) => {

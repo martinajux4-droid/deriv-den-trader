@@ -59,7 +59,7 @@ function LoginPage() {
       <Card className="w-full max-w-md p-8">
         <Link to="/" className="text-xs text-muted-foreground">← Back</Link>
         <h1 className="mt-3 text-2xl font-semibold">{mode === "signin" ? "Sign in" : "Create account"}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">to access DerivFlow</p>
+        <p className="mt-1 text-sm text-muted-foreground">to access Hifex Trader AI</p>
 
         <Button onClick={onGoogle} disabled={busy} variant="secondary" className="mt-6 w-full">
           Continue with Google
