@@ -44,43 +44,48 @@
 :root {
   --radius: 0.625rem;
   /* Dark trading theme by default */
-  --background: oklch(0.16 0.01 250);
+  --background: oklch(0.13 0.015 260);
   --foreground: oklch(0.96 0.005 250);
-  --card: oklch(0.205 0.012 250);
+  --card: oklch(0.18 0.015 260);
   --card-foreground: oklch(0.96 0.005 250);
-  --popover: oklch(0.205 0.012 250);
+  --popover: oklch(0.18 0.015 260);
   --popover-foreground: oklch(0.96 0.005 250);
-  --primary: oklch(0.72 0.18 145);
-  --primary-foreground: oklch(0.16 0.02 145);
-  --secondary: oklch(0.27 0.015 250);
+  /* Premium gold primary, electric blue accent */
+  --primary: oklch(0.82 0.15 85);
+  --primary-foreground: oklch(0.18 0.04 85);
+  --secondary: oklch(0.24 0.02 260);
   --secondary-foreground: oklch(0.96 0.005 250);
-  --muted: oklch(0.24 0.012 250);
-  --muted-foreground: oklch(0.66 0.02 250);
-  --accent: oklch(0.3 0.02 250);
+  --muted: oklch(0.22 0.015 260);
+  --muted-foreground: oklch(0.68 0.02 260);
+  --accent: oklch(0.62 0.18 250);
   --accent-foreground: oklch(0.96 0.005 250);
   --destructive: oklch(0.62 0.22 25);
   --destructive-foreground: oklch(0.98 0.01 25);
-  --border: oklch(0.28 0.012 250);
-  --input: oklch(0.24 0.012 250);
-  --ring: oklch(0.72 0.18 145);
+  --border: oklch(0.28 0.015 260);
+  --input: oklch(0.22 0.015 260);
+  --ring: oklch(0.82 0.15 85);
 
-  --bull: oklch(0.72 0.18 145);
+  --bull: oklch(0.74 0.18 150);
   --bull-foreground: oklch(0.16 0.02 145);
   --bear: oklch(0.65 0.22 25);
   --bear-foreground: oklch(0.98 0.01 25);
   --warning: oklch(0.78 0.16 75);
 
-  --sidebar: oklch(0.18 0.012 250);
+  --sidebar: oklch(0.15 0.015 260);
   --sidebar-foreground: oklch(0.92 0.005 250);
-  --sidebar-border: oklch(0.26 0.012 250);
-  --sidebar-accent: oklch(0.26 0.015 250);
+  --sidebar-border: oklch(0.26 0.015 260);
+  --sidebar-accent: oklch(0.24 0.02 260);
   --sidebar-accent-foreground: oklch(0.96 0.005 250);
 
-  --gradient-hero: radial-gradient(ellipse at top, oklch(0.28 0.08 145 / 0.35), transparent 60%),
-                   linear-gradient(180deg, oklch(0.18 0.01 250), oklch(0.14 0.01 250));
-  --gradient-bull: linear-gradient(135deg, oklch(0.72 0.18 145), oklch(0.62 0.16 160));
+  --gradient-hero: radial-gradient(ellipse 80% 60% at 50% -10%, oklch(0.55 0.18 250 / 0.35), transparent 60%),
+                   radial-gradient(ellipse 60% 50% at 80% 20%, oklch(0.82 0.15 85 / 0.18), transparent 60%),
+                   linear-gradient(180deg, oklch(0.15 0.015 260), oklch(0.11 0.015 260));
+  --gradient-gold: linear-gradient(135deg, oklch(0.86 0.14 90), oklch(0.72 0.16 70));
+  --gradient-blue: linear-gradient(135deg, oklch(0.68 0.18 250), oklch(0.55 0.2 265));
+  --gradient-bull: linear-gradient(135deg, oklch(0.74 0.18 150), oklch(0.62 0.16 160));
   --gradient-bear: linear-gradient(135deg, oklch(0.65 0.22 25), oklch(0.55 0.2 15));
-  --shadow-glow: 0 0 40px oklch(0.72 0.18 145 / 0.25);
+  --shadow-glow: 0 0 60px oklch(0.82 0.15 85 / 0.25);
+  --shadow-blue-glow: 0 0 60px oklch(0.62 0.2 250 / 0.3);
   --shadow-card: 0 8px 24px oklch(0 0 0 / 0.4);
 }
 
@@ -95,4 +100,30 @@
   .num { font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
   .bull { color: var(--color-bull); }
   .bear { color: var(--color-bear); }
+  .glass {
+    background: linear-gradient(180deg, oklch(1 0 0 / 0.04), oklch(1 0 0 / 0.01));
+    backdrop-filter: blur(14px);
+    border: 1px solid oklch(1 0 0 / 0.08);
+  }
+  .text-gold { color: oklch(0.86 0.14 90); }
+  .bg-gold-gradient { background: var(--gradient-gold); }
+  .bg-blue-gradient { background: var(--gradient-blue); }
+  .text-gradient-gold {
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .text-gradient-blue {
+    background: linear-gradient(135deg, oklch(0.86 0.14 90), oklch(0.68 0.18 250));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  @keyframes float-up { 0% { transform: translateY(8px); opacity: 0 } 100% { transform: translateY(0); opacity: 1 } }
+  @keyframes pulse-glow { 0%,100% { box-shadow: 0 0 20px oklch(0.82 0.15 85 / 0.3) } 50% { box-shadow: 0 0 40px oklch(0.82 0.15 85 / 0.5) } }
+  @keyframes ticker { 0% { transform: translateX(0) } 100% { transform: translateX(-50%) } }
+  .animate-float-up { animation: float-up 0.6s ease-out both; }
+  .animate-pulse-glow { animation: pulse-glow 2.5s ease-in-out infinite; }
+  .animate-ticker { animation: ticker 30s linear infinite; }
 }
