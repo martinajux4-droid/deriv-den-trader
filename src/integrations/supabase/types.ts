@@ -14,16 +14,253 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bot_runs: {
+        Row: {
+          id: string
+          notes: string | null
+          pnl: number
+          started_at: string
+          status: string
+          stopped_at: string | null
+          strategy_id: string | null
+          trades_count: number
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          notes?: string | null
+          pnl?: number
+          started_at?: string
+          status?: string
+          stopped_at?: string | null
+          strategy_id?: string | null
+          trades_count?: number
+          user_id: string
+        }
+        Update: {
+          id?: string
+          notes?: string | null
+          pnl?: number
+          started_at?: string
+          status?: string
+          stopped_at?: string | null
+          strategy_id?: string | null
+          trades_count?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_runs_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deriv_accounts: {
+        Row: {
+          created_at: string
+          currency: string | null
+          id: string
+          is_active: boolean
+          is_virtual: boolean
+          loginid: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string | null
+          id?: string
+          is_active?: boolean
+          is_virtual?: boolean
+          loginid: string
+          token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string | null
+          id?: string
+          is_active?: boolean
+          is_virtual?: boolean
+          loginid?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          default_stake: number
+          default_symbol: string
+          deriv_app_id: string
+          display_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_stake?: number
+          default_symbol?: string
+          deriv_app_id?: string
+          display_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_stake?: number
+          default_symbol?: string
+          deriv_app_id?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      strategies: {
+        Row: {
+          config: Json
+          created_at: string
+          id: string
+          name: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          id?: string
+          name: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          id?: string
+          name?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      trades: {
+        Row: {
+          bot_run_id: string | null
+          closed_at: string | null
+          contract_id: string | null
+          contract_type: string
+          duration: number | null
+          duration_unit: string | null
+          entry_spot: number | null
+          exit_spot: number | null
+          id: string
+          is_virtual: boolean
+          loginid: string | null
+          opened_at: string
+          payout: number | null
+          profit: number | null
+          raw: Json | null
+          stake: number
+          status: string
+          symbol: string
+          user_id: string
+        }
+        Insert: {
+          bot_run_id?: string | null
+          closed_at?: string | null
+          contract_id?: string | null
+          contract_type: string
+          duration?: number | null
+          duration_unit?: string | null
+          entry_spot?: number | null
+          exit_spot?: number | null
+          id?: string
+          is_virtual?: boolean
+          loginid?: string | null
+          opened_at?: string
+          payout?: number | null
+          profit?: number | null
+          raw?: Json | null
+          stake: number
+          status?: string
+          symbol: string
+          user_id: string
+        }
+        Update: {
+          bot_run_id?: string | null
+          closed_at?: string | null
+          contract_id?: string | null
+          contract_type?: string
+          duration?: number | null
+          duration_unit?: string | null
+          entry_spot?: number | null
+          exit_spot?: number | null
+          id?: string
+          is_virtual?: boolean
+          loginid?: string | null
+          opened_at?: string
+          payout?: number | null
+          profit?: number | null
+          raw?: Json | null
+          stake?: number
+          status?: string
+          symbol?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trades_bot_run_id_fkey"
+            columns: ["bot_run_id"]
+            isOneToOne: false
+            referencedRelation: "bot_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +387,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
