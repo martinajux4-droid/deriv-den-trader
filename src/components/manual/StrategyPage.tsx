@@ -165,27 +165,27 @@ export function StrategyPage({ id }: { id: StrategyId }) {
   return (
     <div className="animate-fade-in space-y-4 pb-28 md:pb-28">
       {/* Header */}
-      <div className="glass-card p-4 md:p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+      <div className="glass-card p-3 sm:p-4 md:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3 sm:items-center">
+          <div className="flex min-w-0 items-center gap-3">
             <Link to="/manual" className="grid h-9 w-9 place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-4 w-4" />
             </Link>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em]" style={headerAccent}>{meta.accentLabel}</span>
+                <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] truncate" style={headerAccent}>{meta.accentLabel}</span>
                 <span className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${ready ? "border-bull/40 bg-bull/10 text-bull" : "border-white/10 bg-white/[0.02] text-muted-foreground"}`}>
                   <span className={`h-1.5 w-1.5 rounded-full ${ready ? "bg-bull animate-pulse" : "bg-muted-foreground"}`} />
                   {ready ? "Engine ready" : "Calibrating"}
                 </span>
               </div>
-              <h1 className="mt-1 text-2xl font-semibold tracking-tight">{meta.title}</h1>
-              <p className="text-xs text-muted-foreground">{meta.subtitle}</p>
+              <h1 className="mt-1 text-xl font-semibold tracking-tight sm:text-2xl">{meta.title}</h1>
+              <p className="text-[11px] text-muted-foreground sm:text-xs">{meta.subtitle}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full items-center gap-2 sm:w-auto">
             <Select value={symbol} onValueChange={setSymbol}>
-              <SelectTrigger className="input-glow h-10 w-[200px] border-0"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="input-glow h-10 w-full border-0 sm:w-[200px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {DERIV_SYMBOLS.map((s) => <SelectItem key={s.symbol} value={s.symbol}>{s.name}</SelectItem>)}
               </SelectContent>
@@ -206,7 +206,7 @@ export function StrategyPage({ id }: { id: StrategyId }) {
             <div className={`text-xs num font-semibold ${vol >= 70 ? "text-bear" : vol >= 40 ? "text-warning" : "text-bull"}`}>{vol.toFixed(0)}%</div>
           </div>
         </div>
-        <div className="mt-4 border-t border-white/5 pt-4">
+        <div className="mt-3 border-t border-white/5 pt-3 sm:mt-4 sm:pt-4">
           <LivePriceStream symbol={symbol} name={symMeta?.name || symbol} />
         </div>
       </div>
@@ -214,7 +214,7 @@ export function StrategyPage({ id }: { id: StrategyId }) {
       {/* Main grid */}
       <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
         {/* Meter */}
-        <div className="glass-card p-4 md:p-6">
+        <div className="glass-card p-3 sm:p-4 md:p-6">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Market meter</div>
