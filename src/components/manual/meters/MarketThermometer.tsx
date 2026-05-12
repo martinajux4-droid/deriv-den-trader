@@ -140,13 +140,15 @@ export function MarketThermometer({ mode, symbol }: { mode: Mode; symbol: string
   }, [insights.length]);
 
   const tickMarks = Array.from({ length: 60 });
-  const particles = Array.from({ length: 14 });
-  const bubblesL = Array.from({ length: 4 });
-  const bubblesR = Array.from({ length: 4 });
+  // Lighter particle load on small screens for smoother 60fps
+  const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
+  const particles = Array.from({ length: isMobile ? 6 : 14 });
+  const bubblesL = Array.from({ length: isMobile ? 3 : 4 });
+  const bubblesR = Array.from({ length: isMobile ? 3 : 4 });
 
   return (
     <div
-      className="therm-stage relative w-full p-4 sm:p-6"
+      className="therm-stage relative w-full p-3 sm:p-6"
       style={{ ["--therm-glow" as any]: dominant.glow }}
     >
       {/* Ambient layers */}
@@ -166,13 +168,15 @@ export function MarketThermometer({ mode, symbol }: { mode: Mode; symbol: string
         />
       ))}
 
-      {/* Layout: left bar | center ring | right bar */}
-      <div className="relative grid grid-cols-[64px_1fr_64px] items-stretch gap-3 sm:grid-cols-[80px_1fr_80px] sm:gap-5">
+      {/* Mobile: center reactor stacked above bars. sm+: classic 3-column. */}
+      <div className="relative grid grid-cols-2 gap-3 sm:grid-cols-[80px_1fr_80px] sm:items-stretch sm:gap-5">
         {/* LEFT liquid pressure bar */}
-        <LiquidBar side={left} animated={lA} bubbles={bubblesL} intensity={intensity} pulse={pulse} />
+        <div className="order-2 sm:order-1 sm:col-auto">
+          <LiquidBar side={left} animated={lA} bubbles={bubblesL} intensity={intensity} pulse={pulse} compact={isMobile} />
+        </div>
 
         {/* CENTER reactor */}
-        <div className="relative mx-auto flex aspect-square w-full max-w-[320px] items-center justify-center">
+        <div className="relative order-1 col-span-2 mx-auto flex aspect-square w-full max-w-[260px] items-center justify-center sm:order-2 sm:col-span-1 sm:max-w-[320px]">
           {/* Outer rotating ticks */}
           <svg viewBox="0 0 200 200" className="therm-ring-rotate absolute inset-0 h-full w-full opacity-60">
             {tickMarks.map((_, i) => {
@@ -255,7 +259,9 @@ export function MarketThermometer({ mode, symbol }: { mode: Mode; symbol: string
         </div>
 
         {/* RIGHT liquid pressure bar */}
-        <LiquidBar side={right} animated={rA} bubbles={bubblesR} intensity={intensity} pulse={pulse} />
+        <div className="order-3 sm:col-auto">
+          <LiquidBar side={right} animated={rA} bubbles={bubblesR} intensity={intensity} pulse={pulse} compact={isMobile} />
+        </div>
       </div>
 
       {/* Side labels + percentages */}
@@ -305,8 +311,8 @@ export function MarketThermometer({ mode, symbol }: { mode: Mode; symbol: string
 }
 
 function LiquidBar({
-  side, animated, bubbles, intensity, pulse,
-}: { side: Side; animated: number; bubbles: unknown[]; intensity: number; pulse: number }) {
+  side, animated, bubbles, intensity, pulse, compact = false,
+}: { side: Side; animated: number; bubbles: unknown[]; intensity: number; pulse: number; compact?: boolean }) {
   const h = Math.max(4, Math.min(100, animated));
   const waveDur = `${Math.max(1.6, 4.5 - intensity * 2.6)}s`;
   const bubbleDurBase = Math.max(2.2, 3.5 - intensity * 1.6);
@@ -314,7 +320,7 @@ function LiquidBar({
     <div className="relative flex flex-col items-center">
       <div
         key={`bar-${pulse}`}
-        className="relative h-[260px] w-full overflow-hidden rounded-2xl border border-white/10 sm:h-[300px]"
+        className={`relative w-full overflow-hidden rounded-2xl border border-white/10 ${compact ? "h-[160px]" : "h-[260px]"} sm:h-[300px]`}
         style={{
           background:
             "linear-gradient(180deg, oklch(1 0 0 / 0.04), oklch(0 0 0 / 0.4)), oklch(0.1 0.02 260)",
