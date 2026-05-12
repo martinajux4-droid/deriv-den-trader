@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTradeRouteImport } from './routes/_authenticated/trade'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedBotRouteImport } from './routes/_authenticated/bot'
 import { Route as AuthDerivCallbackRouteImport } from './routes/auth.deriv.callback'
 
 const LoginRoute = LoginRouteImport.update({
@@ -40,6 +41,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedBotRoute = AuthenticatedBotRouteImport.update({
+  id: '/bot',
+  path: '/bot',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthDerivCallbackRoute = AuthDerivCallbackRouteImport.update({
   id: '/auth/deriv/callback',
   path: '/auth/deriv/callback',
@@ -49,6 +55,7 @@ const AuthDerivCallbackRoute = AuthDerivCallbackRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/bot': typeof AuthenticatedBotRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/trade': typeof AuthenticatedTradeRoute
   '/auth/deriv/callback': typeof AuthDerivCallbackRoute
@@ -56,6 +63,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/bot': typeof AuthenticatedBotRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/trade': typeof AuthenticatedTradeRoute
   '/auth/deriv/callback': typeof AuthDerivCallbackRoute
@@ -65,20 +73,28 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+  '/_authenticated/bot': typeof AuthenticatedBotRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/trade': typeof AuthenticatedTradeRoute
   '/auth/deriv/callback': typeof AuthDerivCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/dashboard' | '/trade' | '/auth/deriv/callback'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/bot'
+    | '/dashboard'
+    | '/trade'
+    | '/auth/deriv/callback'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/dashboard' | '/trade' | '/auth/deriv/callback'
+  to: '/' | '/login' | '/bot' | '/dashboard' | '/trade' | '/auth/deriv/callback'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/login'
+    | '/_authenticated/bot'
     | '/_authenticated/dashboard'
     | '/_authenticated/trade'
     | '/auth/deriv/callback'
@@ -128,6 +144,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/bot': {
+      id: '/_authenticated/bot'
+      path: '/bot'
+      fullPath: '/bot'
+      preLoaderRoute: typeof AuthenticatedBotRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/auth/deriv/callback': {
       id: '/auth/deriv/callback'
       path: '/auth/deriv/callback'
@@ -139,11 +162,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedBotRoute: typeof AuthenticatedBotRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedTradeRoute: typeof AuthenticatedTradeRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedBotRoute: AuthenticatedBotRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedTradeRoute: AuthenticatedTradeRoute,
 }
