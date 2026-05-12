@@ -14,7 +14,6 @@ import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { AIAssistantFab } from "@/components/AIAssistantFab";
-import { FloatingProfitWidget } from "@/components/FloatingProfitWidget";
 import { TakeProfitModal } from "@/components/TakeProfitModal";
 import { AnimatedBackground } from "@/components/AnimatedBackground";
 
@@ -264,7 +263,6 @@ export function AppShell() {
         <main className="min-w-0 flex-1 p-3 md:p-5"><Outlet /></main>
       </div>
       <AIAssistantFab />
-      <FloatingProfitWidget />
       <TakeProfitModal />
     </div>
   );
