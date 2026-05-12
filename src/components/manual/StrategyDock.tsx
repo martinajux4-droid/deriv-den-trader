@@ -38,8 +38,10 @@ export function StrategyDock() {
                         className="group relative grid place-items-center gap-0.5 rounded-xl px-1 py-2 text-center transition-all"
                         style={isActive ? { background: `linear-gradient(180deg, ${t.accent}26, ${t.accent}10)`, boxShadow: `inset 0 0 0 1px ${t.accent}55, 0 0 24px -6px ${t.accent}` } : undefined}>
                     <span className="relative">
-                      <Icon className={`h-[18px] w-[18px] transition-colors ${isActive ? "" : "text-muted-foreground group-hover:text-foreground"}`}
-                            style={isActive ? { color: t.accent, filter: `drop-shadow(0 0 6px ${t.accent})` } : undefined} />
+                      <span style={isActive ? { color: t.accent, filter: `drop-shadow(0 0 6px ${t.accent})` } : undefined}
+                            className={isActive ? "" : "text-muted-foreground group-hover:text-foreground transition-colors"}>
+                        <Icon className="h-[18px] w-[18px]" />
+                      </span>
                       {isActive && (
                         <span className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full animate-pulse"
                               style={{ background: t.accent, boxShadow: `0 0 8px ${t.accent}` }} />
