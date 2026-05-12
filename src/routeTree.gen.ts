@@ -13,6 +13,8 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTradeRouteImport } from './routes/_authenticated/trade'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedBotRouteImport } from './routes/_authenticated/bot'
 import { Route as AuthDerivCallbackRouteImport } from './routes/auth.deriv.callback'
@@ -36,6 +38,16 @@ const AuthenticatedTradeRoute = AuthenticatedTradeRouteImport.update({
   path: '/trade',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -57,6 +69,8 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/bot': typeof AuthenticatedBotRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/history': typeof AuthenticatedHistoryRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/trade': typeof AuthenticatedTradeRoute
   '/auth/deriv/callback': typeof AuthDerivCallbackRoute
 }
@@ -65,6 +79,8 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/bot': typeof AuthenticatedBotRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/history': typeof AuthenticatedHistoryRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/trade': typeof AuthenticatedTradeRoute
   '/auth/deriv/callback': typeof AuthDerivCallbackRoute
 }
@@ -75,6 +91,8 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/bot': typeof AuthenticatedBotRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/history': typeof AuthenticatedHistoryRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/trade': typeof AuthenticatedTradeRoute
   '/auth/deriv/callback': typeof AuthDerivCallbackRoute
 }
@@ -85,10 +103,20 @@ export interface FileRouteTypes {
     | '/login'
     | '/bot'
     | '/dashboard'
+    | '/history'
+    | '/settings'
     | '/trade'
     | '/auth/deriv/callback'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/bot' | '/dashboard' | '/trade' | '/auth/deriv/callback'
+  to:
+    | '/'
+    | '/login'
+    | '/bot'
+    | '/dashboard'
+    | '/history'
+    | '/settings'
+    | '/trade'
+    | '/auth/deriv/callback'
   id:
     | '__root__'
     | '/'
@@ -96,6 +124,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authenticated/bot'
     | '/_authenticated/dashboard'
+    | '/_authenticated/history'
+    | '/_authenticated/settings'
     | '/_authenticated/trade'
     | '/auth/deriv/callback'
   fileRoutesById: FileRoutesById
@@ -137,6 +167,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTradeRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/history': {
+      id: '/_authenticated/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof AuthenticatedHistoryRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -164,12 +208,16 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedBotRoute: typeof AuthenticatedBotRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTradeRoute: typeof AuthenticatedTradeRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedBotRoute: AuthenticatedBotRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTradeRoute: AuthenticatedTradeRoute,
 }
 
