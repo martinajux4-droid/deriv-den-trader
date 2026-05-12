@@ -54,12 +54,12 @@ export function TradeInputs({
       </div>
 
       <button onClick={() => setOpen((o) => !o)}
-              className="flex w-full items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2 text-xs text-muted-foreground transition-colors hover:text-foreground">
-        <span className="uppercase tracking-[0.16em]">Advanced</span>
+              className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-xs text-muted-foreground transition-colors hover:text-foreground hover:border-[var(--meter-momentum)]/40">
+        <span className="uppercase tracking-[0.16em]">Advanced AI settings</span>
         {open ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
       </button>
       {open && (
-        <div className="grid grid-cols-2 gap-3 animate-fade-in">
+        <div className="risk-advanced grid grid-cols-2 gap-3 p-3">
           <Field label="Duration" value={cfg.duration} onChange={(v) => upd("duration", v)} step="1" min="1" />
           <label className="flex flex-col gap-1.5">
             <span className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Unit</span>
