@@ -22,32 +22,35 @@ const TABS: Tab[] = [
 export function StrategyDock() {
   const { pathname } = useLocation();
   return (
-    <nav className="pointer-events-none fixed inset-x-0 bottom-3 z-40 px-3 md:bottom-5">
+    <nav
+      className="pointer-events-none fixed inset-x-0 z-40 px-2 sm:px-3 md:bottom-5"
+      style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+    >
       <div className="pointer-events-auto mx-auto max-w-3xl">
-        <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[oklch(0.13_0.015_260_/_0.78)] p-1.5 shadow-[0_20px_60px_-20px_oklch(0_0_0_/_0.8),inset_0_1px_0_oklch(1_0_0_/_0.06)] backdrop-blur-2xl">
+        <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[oklch(0.13_0.015_260_/_0.78)] p-1 shadow-[0_20px_60px_-20px_oklch(0_0_0_/_0.8),inset_0_1px_0_oklch(1_0_0_/_0.06)] backdrop-blur-2xl sm:p-1.5">
           {/* ambient glow */}
           <div className="pointer-events-none absolute inset-0 opacity-60"
                style={{ background: "radial-gradient(60% 100% at 50% 110%, oklch(0.82 0.15 85 / 0.18), transparent 60%), radial-gradient(60% 100% at 50% -10%, oklch(0.62 0.18 250 / 0.18), transparent 60%)" }} />
-          <ul className="relative flex items-center justify-between gap-0.5">
+          <ul className="relative flex items-center justify-between gap-0">
             {TABS.map((t) => {
               const isActive = t.to === "/manual" ? pathname === "/manual" : pathname.startsWith(t.to);
               const Icon = t.icon;
               return (
-                <li key={t.to} className="flex-1 min-w-0">
+                <li key={t.to} className="min-w-0 flex-1">
                   <Link to={t.to}
-                        className="group relative grid place-items-center gap-0.5 rounded-xl px-1 py-2 text-center transition-all"
+                        className="group relative grid min-h-[52px] place-items-center gap-0.5 rounded-xl px-0.5 py-1.5 text-center transition-all sm:min-h-[56px] sm:px-1 sm:py-2"
                         style={isActive ? { background: `linear-gradient(180deg, ${t.accent}26, ${t.accent}10)`, boxShadow: `inset 0 0 0 1px ${t.accent}55, 0 0 24px -6px ${t.accent}` } : undefined}>
                     <span className="relative">
                       <span style={isActive ? { color: t.accent, filter: `drop-shadow(0 0 6px ${t.accent})` } : undefined}
                             className={isActive ? "" : "text-muted-foreground group-hover:text-foreground transition-colors"}>
-                        <Icon className="h-[18px] w-[18px]" />
+                        <Icon className="h-[16px] w-[16px] sm:h-[18px] sm:w-[18px]" />
                       </span>
                       {isActive && (
                         <span className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full animate-pulse"
                               style={{ background: t.accent, boxShadow: `0 0 8px ${t.accent}` }} />
                       )}
                     </span>
-                    <span className={`truncate text-[10px] font-semibold uppercase tracking-[0.12em] ${isActive ? "" : "text-muted-foreground"}`}
+                    <span className={`truncate text-[9px] font-semibold uppercase tracking-[0.1em] sm:text-[10px] sm:tracking-[0.12em] ${isActive ? "" : "text-muted-foreground"}`}
                           style={isActive ? { color: t.accent } : undefined}>
                       {t.label}
                     </span>
