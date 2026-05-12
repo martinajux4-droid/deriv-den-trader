@@ -1,65 +1,50 @@
-## Deriv Trading System — Build Plan
+## Scope
 
-A web app to trade Deriv synthetic indices (Volatility 10/25/50/75/100, etc.) with a manual panel and an automated bot, secured by user accounts.
+This is a very large upgrade touching the bot engine, trade terminal, market watch, risk management, AI analysis, history/analytics, and global UI polish. To ship it well without a 30-minute mega-edit that risks breaking the working Deriv connection, I'll deliver it in **3 sequenced phases**. Each phase is independently shippable and testable on your demo account before moving to the next.
 
-### What you'll get
+---
 
-1. **Login / Signup** (email + Google) — your own user account in the app.
-2. **Connect Deriv** — one-click OAuth to link your Deriv account (demo or real). Tokens stored encrypted per user.
-3. **Live dashboard** — real-time price ticks, account balance, open positions.
-4. **Manual trading panel**
-   - Symbol picker (Volatility 10/25/50/75/100, 1s variants)
-   - Contract types: Rise/Fall, Higher/Lower, Matches/Differs, Even/Odd, Over/Under
-   - Stake, duration (ticks/seconds), one-click Buy
-   - Live tick chart
-5. **Bot builder + runner**
-   - Strategy presets: Rise/Fall trend follower, Digit Over/Under, Martingale
-   - Configurable: symbol, stake, take-profit, stop-loss, max trades, martingale multiplier
-   - Start/Stop, live status, trade-by-trade log
-6. **Trade history & P&L** — every trade saved, filterable, daily P&L summary.
-7. **Settings** — switch between linked Deriv accounts (demo/real), default stake, risk limits.
+### Phase 1 — Engine & Risk (highest impact, fixes real bugs)
 
-### Important — what you need to do once
+Goal: bot becomes safe, smart, and stops failing on "duration not offered".
 
-Deriv requires you to register an "app" to get an OAuth `app_id`:
-- Go to https://api.deriv.com/dashboard/ → Register application
-- Set OAuth redirect URL to your app's `/auth/deriv/callback` URL
-- Paste the `app_id` into the app's Settings page (it's public, not a secret)
+1. **Contract validator** — new `src/lib/deriv-contracts.ts` that calls Deriv `contracts_for` once per symbol, caches supported `contract_type` + `duration`/`duration_unit` ranges. Bot auto-snaps duration into the supported range and skips strategies the symbol doesn't support. Eliminates the "Trading is not offered for this duration" error.
+2. **AI analysis core** — new `src/lib/ai-analysis.ts` with one shared engine producing: trend dir & strength, momentum, volatility (stdev of returns), buy/sell pressure, RSI, EMA9/21 cross, support/resistance from rolling extremes, reversal probability, confidence %, entry score, risk score, plain-English recommendation. Used by signals, insights, and the bot.
+3. **Bot engine v2** (`src/lib/bot-engine.ts` rewrite) with:
+   - Modes: **safe / normal / aggressive** + **auto / semi-auto / manual**
+   - Risk: take-profit, stop-loss, daily target, max drawdown, max trades, max consecutive losses (auto-pause), cooldown after losses, smart-recovery, emergency stop
+   - Stake: fixed, smart-adjust (scale by AI confidence), martingale, anti-martingale
+   - Strategies: Rise/Fall AI, Even/Odd AI, Over/Under AI, Trend Following, Smart Scalping, Momentum, Sniper Entry, Breakout, Reversal, S/R Bounce, Volatility Spike Hunter
+   - States surfaced live: `scanning | waiting_entry | executing | managing | paused | risk_lock | stopped`
+   - Only fires when AI confidence ≥ user threshold
 
-I'll ship with Deriv's public test `app_id` (1089) so you can try it immediately on demo, and a settings field to swap in your own.
+### Phase 2 — Bot Console & Trade Terminal UI
 
-### Design direction
+4. **Bot console** (`/bot`) redesign: glass cards, strategy picker grid (each card shows win rate / confidence / risk / recommended market / expected ROI), risk manager panel, live status pill, P&L curve, recent decisions log, Start / Stop / **Pause** / **Resume** / **Emergency Stop** controls.
+5. **Trade terminal** (`/trade`) redesign: bigger candlestick chart with EMA9/21, RSI sub-pane, Bollinger Bands toggle, S/R overlays, AI overlay (entry zones), floating order panel, live activity stream, market heatmap strip.
+6. **Market watch** expanded: V10, V25, V50, V75, V100, Boom 300/500/1000, Crash 300/500/1000 — each tile shows price, mini sparkline, AI signal, trend arrow, buy/sell pressure bars, volatility score, sentiment label.
 
-Trading-app aesthetic: dark theme, dense data, monospace numerics, green/red P&L, subtle motion on price changes. Inspired by Deriv DTrader and Binance pro UI.
+### Phase 3 — Analytics & Polish
 
-### Technical details
+7. **History & analytics** (`/history`): P&L curve, daily/weekly bars, win/loss streak tracker, AI-accuracy chart (predicted vs actual), strategy leaderboard, heatmap by hour/day, full trade journal table.
+8. **Global polish**: skeleton loaders, glow indicators on live data, floating AI assistant button (uses Lovable AI to answer "what should I trade now?" using the analysis engine), micro-animations, mobile pass.
 
-- **Stack**: TanStack Start (existing) + Lovable Cloud (Supabase) for auth & DB.
-- **Deriv API**: WebSocket `wss://ws.derivws.com/websockets/v3?app_id=...` — connection lives in the browser (per-user token), wrapped in a typed React client with auto-reconnect.
-- **OAuth flow**: Redirect to `https://oauth.deriv.com/oauth2/authorize?app_id=...&l=EN`; Deriv returns tokens in URL params (`token1`, `acct1`, `cur1`...). Callback route parses, saves to `deriv_accounts` table via authenticated server function.
-- **Bot runner**: Browser-side loop driven by tick subscription; each completed contract written to `trades` table via server function. (Browser-runner means the bot only runs while the tab is open — fine for v1; a server-side runner would need a long-lived worker, out of scope.)
-- **DB tables** (RLS, user-scoped):
-  - `profiles` (id, display_name)
-  - `deriv_accounts` (user_id, loginid, currency, is_virtual, token, is_active)
-  - `strategies` (user_id, name, type, config jsonb)
-  - `bot_runs` (user_id, strategy_id, status, started_at, stopped_at, pnl)
-  - `trades` (user_id, bot_run_id nullable, contract_id, symbol, contract_type, stake, payout, profit, entry_spot, exit_spot, status, opened_at, closed_at)
-- **Routes**: `/` (landing), `/login`, `/auth/deriv/callback`, `/_authenticated/dashboard`, `/trade`, `/bot`, `/history`, `/settings`.
-- **Roles**: standard `user_roles` table + `has_role` security-definer function (no admin features in v1, but scaffolded).
+---
 
-### Build order
+### Technical notes
 
-1. Enable Lovable Cloud, set up auth (email + Google) and DB schema with RLS.
-2. Design system + app shell (dark trading theme, sidebar nav).
-3. Landing + login pages.
-4. Deriv WebSocket client + OAuth connect flow + account switcher.
-5. Manual trade panel with live ticks.
-6. Bot builder + runner + live log.
-7. Trade history page + dashboard summary.
-8. Settings (app_id, default stake, risk limits).
+- All trading still goes through `DerivClient` over WebSocket — no schema changes required.
+- AI uses local quantitative heuristics on tick streams (no API calls, instant). I can later wire Lovable AI Gateway for the floating assistant only.
+- Bot status keeps using `use-bot-status.ts` so the dashboard widget stays in sync.
+- Trades continue to persist to `trades` + `bot_runs` tables (already exist with RLS).
+- No DB migrations needed for phase 1–3.
 
-### Honest caveats
+---
 
-- Trading real money is risky. The bot is a browser-side script — it stops if you close the tab. I'll add clear warnings and default to demo accounts.
-- Deriv OAuth tokens are stored in your DB; protected by RLS so only you can read your own.
-- Google sign-in requires the default Lovable Cloud Google provider (no extra setup from you).
+### Confirm before I start
+
+I'll begin with **Phase 1** now if you say "go". Want any of these tweaked first?
+
+- Skip a phase or reorder?
+- Drop any strategy from the list?
+- Default risk preset (safe / normal / aggressive)?
