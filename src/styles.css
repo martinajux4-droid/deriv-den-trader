@@ -143,6 +143,5 @@
   background-size: 200% 100%;
   animation: shimmer-gold 2.4s linear infinite;
 }
-.bg-gold-gradient { background: var(--gradient-gold); }
 .bg-bull-gradient { background: var(--gradient-bull); }
 .bg-bear-gradient { background: var(--gradient-bear); }
