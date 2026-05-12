@@ -11,8 +11,9 @@ import { ActiveTradesPanel } from "@/components/ActiveTradesPanel";
 import { AIInsightsPanel } from "@/components/AIInsightsPanel";
 import { BotQuickLaunch } from "@/components/BotQuickLaunch";
 import { PerfCard } from "@/components/PerformanceCards";
+import { DashboardHero } from "@/components/DashboardHero";
 import { DERIV_SYMBOLS } from "@/lib/deriv-symbols";
-import { TrendingUp, Trophy, Target, Wallet, Brain, Activity } from "lucide-react";
+import { TrendingUp, Trophy, Target, Brain, Activity, CalendarDays } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
@@ -73,34 +74,19 @@ function Dashboard() {
   const symbolName = DERIV_SYMBOLS.find((s) => s.symbol === selected)?.name || selected;
 
   return (
-    <div className="animate-float-up space-y-4">
-      {/* Hero greeting */}
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Welcome back{profile?.display_name ? `, ${profile.display_name}` : ""}
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            Institutional AI terminal · live synthetic markets · automated execution
-          </p>
-        </div>
-        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-bull" />
-          Real-time WebSocket feed
-        </div>
-      </div>
+    <div className="animate-float-up space-y-5">
+      {/* Premium hero header with animated welcome + balance */}
+      <DashboardHero
+        displayName={profile?.display_name}
+        todayPnl={stats.todayProfit}
+        weekPnl={stats.weekProfit}
+        aiAccuracy={stats.aiAcc}
+      />
 
       {accounts.length === 0 && <ConnectDeriv />}
 
       {/* Performance KPI row */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <PerfCard
-          label="Account Balance"
-          value={balance ? balance.balance.toFixed(2) : "—"}
-          sub={balance ? balance.currency : "Connect Deriv account"}
-          icon={<Wallet className="h-4 w-4" />}
-          tone="primary"
-        />
         <PerfCard
           label="All-time P&L"
           value={`${stats.profit >= 0 ? "+" : ""}${stats.profit.toFixed(2)}`}
@@ -119,9 +105,16 @@ function Dashboard() {
         <PerfCard
           label="AI Accuracy"
           value={`${stats.aiAcc}%`}
-          sub={`Today ${stats.todayProfit >= 0 ? "+" : ""}${stats.todayProfit.toFixed(2)} · 7d ${stats.weekProfit >= 0 ? "+" : ""}${stats.weekProfit.toFixed(2)}`}
+          sub={`Today ${stats.todayProfit >= 0 ? "+" : ""}${stats.todayProfit.toFixed(2)}`}
           icon={<Brain className="h-4 w-4" />}
           tone="primary"
+        />
+        <PerfCard
+          label="7-Day P&L"
+          value={`${stats.weekProfit >= 0 ? "+" : ""}${stats.weekProfit.toFixed(2)}`}
+          sub={balance ? balance.currency : "—"}
+          icon={<CalendarDays className="h-4 w-4" />}
+          tone={stats.weekProfit >= 0 ? "bull" : "bear"}
         />
       </div>
 

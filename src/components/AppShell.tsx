@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { AIAssistantFab } from "@/components/AIAssistantFab";
 import { FloatingProfitWidget } from "@/components/FloatingProfitWidget";
 import { TakeProfitModal } from "@/components/TakeProfitModal";
+import { AnimatedBackground } from "@/components/AnimatedBackground";
 
 type NavItem = {
   to?: string;
@@ -144,7 +145,8 @@ export function AppShell() {
   );
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
+    <div className="relative flex min-h-screen bg-background text-foreground">
+      <AnimatedBackground />
       <aside className="hidden w-64 shrink-0 border-r border-sidebar-border bg-sidebar/80 p-4 backdrop-blur md:block">
         {sidebarInner}
       </aside>
