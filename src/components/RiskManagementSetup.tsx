@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Shield, ShieldCheck, ShieldAlert, Sparkles, Brain, Lock, Gauge, AlertTriangle, CheckCircle2, ChevronDown } from "lucide-react";
+import { Shield, ShieldCheck, ShieldAlert, Sparkles, Brain, Lock, Gauge, AlertTriangle, CheckCircle2, ChevronDown, Settings2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -226,7 +226,7 @@ export function RiskManagementSetup({ values, onChange, balance, currency = "USD
 
           <Collapsible open={advOpen} onOpenChange={setAdvOpen}>
             <CollapsibleTrigger className="flex w-full items-center justify-between rounded-xl border border-border/50 bg-background/40 px-3 py-2 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors">
-              <span className="flex items-center gap-2"><Settings2Icon /> Advanced settings</span>
+              <span className="flex items-center gap-2"><Settings2 className="h-3.5 w-3.5" /> Advanced settings</span>
               <ChevronDown className={cn("h-4 w-4 transition-transform", advOpen && "rotate-180")} />
             </CollapsibleTrigger>
             <CollapsibleContent className="grid grid-cols-1 gap-3 pt-3 sm:grid-cols-3">
