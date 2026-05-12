@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard, LineChart, Bot, History, Settings, LogOut, Wifi, WifiOff,
   Eye, Activity, Briefcase, BarChart3, Radio, Shield, CreditCard, Users, ShieldCheck,
-  Bell, ChevronDown, Sparkles, Globe, Zap, Menu, X,
+  Bell, ChevronDown, Sparkles, Globe, Zap, Menu, X, Target,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useDeriv } from "@/hooks/use-deriv";
@@ -27,6 +27,7 @@ type NavItem = {
 const PRIMARY_NAV: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/bot", label: "AI Trading Bot", icon: Bot },
+  { to: "/manual", label: "Manual Terminal", icon: Target },
   { to: "/trade", label: "Trade Terminal", icon: LineChart },
   { label: "Market Watch", icon: Eye, soon: true },
   { label: "Strategies", icon: Sparkles, soon: true },
