@@ -474,12 +474,14 @@
   background-repeat: repeat-x;
   background-size: 120px 18px;
   background-image: radial-gradient(circle at 30px 18px, transparent 14px, var(--liquid-color, oklch(0.7 0.18 250)) 14.5px);
-  animation: therm-wave 4.5s linear infinite;
+  animation: therm-wave var(--therm-wave-dur, 4.5s) linear infinite;
   opacity: .9;
   filter: drop-shadow(0 -4px 10px var(--liquid-color, oklch(0.7 0.18 250)));
 }
 .therm-liquid::after {
-  bottom: -4px; opacity: .55; animation-duration: 6.5s; animation-direction: reverse;
+  bottom: -4px; opacity: .55;
+  animation-duration: calc(var(--therm-wave-dur, 4.5s) * 1.45);
+  animation-direction: reverse;
   filter: drop-shadow(0 -2px 8px var(--liquid-color, oklch(0.7 0.18 250)));
 }
 .therm-liquid > .fill {
