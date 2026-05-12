@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTicks } from "@/hooks/use-ticks";
-import { analyze, digitStats } from "@/lib/ai-analysis";
+import { analyze } from "@/lib/ai-analysis";
 import { useAnimatedNumber } from "@/hooks/use-animated-number";
 
 type Mode = "even-odd" | "rise-fall";
@@ -20,7 +20,7 @@ const COLORS = {
   ai:    "oklch(0.86 0.14 90)",   // gold
 };
 
-function buildInsights(mode: Mode, left: number, right: number, vol: number, trend: string): string[] {
+function buildInsights(mode: Mode, left: number, right: number, vol: number, trend: string, accel: number): string[] {
   const dom = Math.abs(left - right);
   const out: string[] = [];
   if (mode === "even-odd") {
@@ -29,38 +29,95 @@ function buildInsights(mode: Mode, left: number, right: number, vol: number, tre
     else if (dom < 6) out.push("Digit balance tight — wait for break");
     if (vol > 65) out.push("Volatility spike incoming");
     else out.push("Stable tick rhythm — clean signal");
+    if (accel > 1.2) out.push("High-frequency digit imbalance");
+    out.push(left > right ? "AI detecting bullish parity flow" : "Odd pressure expanding");
+    if (dom > 12) out.push("AI confidence rising");
   } else {
     out.push(left > right ? "Momentum shifting bullish" : right > left ? "Bearish pressure building" : "Trend flat — directional pause");
     out.push(trend === "UP" ? "Uptrend intact — buyers in control" : trend === "DOWN" ? "Downtrend intact — sellers in control" : "Range-bound — awaiting breakout");
     if (dom > 20) out.push("Conviction high — AI confidence rising");
     if (vol > 65) out.push("Volatility expansion detected");
+    if (vol < 25) out.push("Volatility compression detected");
+    if (accel > 1.2) out.push("Price acceleration detected");
+    out.push(left > right ? "Buy flow streaming in" : "Sell flow streaming in");
   }
   return out;
 }
 
-export function MarketThermometer({ mode, symbol }: { mode: Mode; symbol: string }) {
-  const ticks = useTicks(symbol, 80);
+// Live tick-driven flow engine: EMA-smoothed pressures, per-tick pulse + intensity
+function useLiveFlow(symbol: string, mode: Mode) {
+  const ticks = useTicks(symbol, 120);
+  const lastEpoch = ticks.length ? ticks[ticks.length - 1].epoch : 0;
+
+  const leftEmaRef = useRef(50);
+  const accelRef = useRef(0);
+  const lastTickAtRef = useRef<number>(Date.now());
+
+  const [pulse, setPulse] = useState(0);
+  useEffect(() => {
+    if (!lastEpoch) return;
+    lastTickAtRef.current = Date.now();
+    setPulse((p) => p + 1);
+  }, [lastEpoch]);
+
   const quotes = ticks.map((t) => t.quote);
   const a = analyze(quotes);
 
-  let left: Side, right: Side;
+  let leftRaw = 50;
   let lastDigit = 0;
   if (mode === "even-odd") {
-    const s = quotes.length ? digitStats(quotes) : { even: 50, odd: 50, lastDigit: 0, over5: 50, under5: 50 };
-    lastDigit = s.lastDigit;
-    left  = { label: "EVEN", value: s.even, color: COLORS.even, glow: "oklch(0.7 0.18 250 / 0.45)" };
-    right = { label: "ODD",  value: s.odd,  color: COLORS.odd,  glow: "oklch(0.65 0.22 25 / 0.45)" };
+    const digits = quotes.map((q) => Number(String(q.toFixed(5)).replace(".", "").slice(-1)));
+    lastDigit = digits[digits.length - 1] ?? 0;
+    let w = 0, evenW = 0;
+    for (let i = 0; i < digits.length; i++) {
+      const weight = Math.pow(0.94, digits.length - 1 - i);
+      w += weight;
+      if (digits[i] % 2 === 0) evenW += weight;
+    }
+    leftRaw = w ? (evenW / w) * 100 : 50;
   } else {
-    const buy  = a?.buyPressure  ?? 50;
-    const sell = a?.sellPressure ?? 50;
-    left  = { label: "RISE", value: buy,  color: COLORS.rise, glow: "oklch(0.74 0.18 150 / 0.45)" };
-    right = { label: "FALL", value: sell, color: COLORS.fall, glow: "oklch(0.62 0.23 22 / 0.45)" };
+    let ups = 0, totW = 0;
+    for (let i = 1; i < quotes.length; i++) {
+      const weight = Math.pow(0.94, quotes.length - 1 - i);
+      totW += weight;
+      if (quotes[i] > quotes[i - 1]) ups += weight;
+    }
+    leftRaw = totW ? (ups / totW) * 100 : 50;
   }
 
-  const lA = useAnimatedNumber(left.value);
-  const rA = useAnimatedNumber(right.value);
-  const dom = Math.abs(left.value - right.value);
-  const dominant = left.value >= right.value ? left : right;
+  const ALPHA = 0.28;
+  const prev = leftEmaRef.current;
+  leftEmaRef.current = prev * (1 - ALPHA) + leftRaw * ALPHA;
+  const left = leftEmaRef.current;
+  const right = 100 - left;
+
+  const targetAccel = Math.min(2.5, Math.abs(leftRaw - prev) / 8);
+  accelRef.current = accelRef.current * 0.8 + targetAccel * 0.2;
+
+  const dom = Math.abs(left - right);
+  const intensity = Math.max(
+    0.2,
+    Math.min(1, dom / 70 + (a?.volatility ?? 0) / 200 + accelRef.current / 4),
+  );
+
+  return { left, right, lastDigit, pulse, intensity, accel: accelRef.current, analysis: a };
+}
+
+export function MarketThermometer({ mode, symbol }: { mode: Mode; symbol: string }) {
+  const flow = useLiveFlow(symbol, mode);
+  const { left: leftVal, right: rightVal, lastDigit, pulse, intensity, accel, analysis: a } = flow;
+
+  const left: Side = mode === "even-odd"
+    ? { label: "EVEN", value: leftVal, color: COLORS.even, glow: "oklch(0.7 0.18 250 / 0.45)" }
+    : { label: "RISE", value: leftVal, color: COLORS.rise, glow: "oklch(0.74 0.18 150 / 0.45)" };
+  const right: Side = mode === "even-odd"
+    ? { label: "ODD", value: rightVal, color: COLORS.odd, glow: "oklch(0.65 0.22 25 / 0.45)" }
+    : { label: "FALL", value: rightVal, color: COLORS.fall, glow: "oklch(0.62 0.23 22 / 0.45)" };
+
+  const lA = useAnimatedNumber(leftVal, 380);
+  const rA = useAnimatedNumber(rightVal, 380);
+  const dom = Math.abs(leftVal - rightVal);
+  const dominant = leftVal >= rightVal ? left : right;
   const vol = a?.volatility ?? 0;
   const trend = a?.trendDir ?? "FLAT";
 
@@ -72,10 +129,13 @@ export function MarketThermometer({ mode, symbol }: { mode: Mode; symbol: string
   const leftLen = (leftPct / 100) * c;
 
   // Cycle insights
-  const insights = useMemo(() => buildInsights(mode, left.value, right.value, vol, trend), [mode, Math.round(left.value / 4), Math.round(right.value / 4), Math.round(vol / 10), trend]);
+  const insights = useMemo(
+    () => buildInsights(mode, leftVal, rightVal, vol, trend, accel),
+    [mode, Math.round(leftVal / 3), Math.round(rightVal / 3), Math.round(vol / 8), trend, Math.round(accel * 4)],
+  );
   const [insightIdx, setInsightIdx] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setInsightIdx((i) => (i + 1) % Math.max(1, insights.length)), 4500);
+    const id = setInterval(() => setInsightIdx((i) => (i + 1) % Math.max(1, insights.length)), 2800);
     return () => clearInterval(id);
   }, [insights.length]);
 
@@ -109,7 +169,7 @@ export function MarketThermometer({ mode, symbol }: { mode: Mode; symbol: string
       {/* Layout: left bar | center ring | right bar */}
       <div className="relative grid grid-cols-[64px_1fr_64px] items-stretch gap-3 sm:grid-cols-[80px_1fr_80px] sm:gap-5">
         {/* LEFT liquid pressure bar */}
-        <LiquidBar side={left} animated={lA} bubbles={bubblesL} />
+        <LiquidBar side={left} animated={lA} bubbles={bubblesL} intensity={intensity} pulse={pulse} />
 
         {/* CENTER reactor */}
         <div className="relative mx-auto flex aspect-square w-full max-w-[320px] items-center justify-center">
@@ -195,7 +255,7 @@ export function MarketThermometer({ mode, symbol }: { mode: Mode; symbol: string
         </div>
 
         {/* RIGHT liquid pressure bar */}
-        <LiquidBar side={right} animated={rA} bubbles={bubblesR} />
+        <LiquidBar side={right} animated={rA} bubbles={bubblesR} intensity={intensity} pulse={pulse} />
       </div>
 
       {/* Side labels + percentages */}
@@ -244,16 +304,22 @@ export function MarketThermometer({ mode, symbol }: { mode: Mode; symbol: string
   );
 }
 
-function LiquidBar({ side, animated, bubbles }: { side: Side; animated: number; bubbles: unknown[] }) {
+function LiquidBar({
+  side, animated, bubbles, intensity, pulse,
+}: { side: Side; animated: number; bubbles: unknown[]; intensity: number; pulse: number }) {
   const h = Math.max(4, Math.min(100, animated));
+  const waveDur = `${Math.max(1.6, 4.5 - intensity * 2.6)}s`;
+  const bubbleDurBase = Math.max(2.2, 3.5 - intensity * 1.6);
   return (
     <div className="relative flex flex-col items-center">
       <div
+        key={`bar-${pulse}`}
         className="relative h-[260px] w-full overflow-hidden rounded-2xl border border-white/10 sm:h-[300px]"
         style={{
           background:
             "linear-gradient(180deg, oklch(1 0 0 / 0.04), oklch(0 0 0 / 0.4)), oklch(0.1 0.02 260)",
-          boxShadow: `inset 0 0 24px ${side.glow}, 0 0 24px -10px ${side.glow}`,
+          boxShadow: `inset 0 0 ${24 + intensity * 18}px ${side.glow}, 0 0 ${24 + intensity * 22}px -10px ${side.glow}`,
+          transition: "box-shadow .4s ease",
         }}
       >
         {/* tick scale */}
@@ -265,7 +331,12 @@ function LiquidBar({ side, animated, bubbles }: { side: Side; animated: number; 
         {/* liquid */}
         <div
           className="therm-liquid"
-          style={{ height: `${h}%`, ["--liquid-color" as any]: side.color }}
+          style={{
+            height: `${h}%`,
+            ["--liquid-color" as any]: side.color,
+            transition: "height .55s cubic-bezier(.2,.7,.3,1)",
+            ["--therm-wave-dur" as any]: waveDur,
+          }}
         >
           <div className="fill" />
           {bubbles.map((_, i) => (
@@ -274,8 +345,8 @@ function LiquidBar({ side, animated, bubbles }: { side: Side; animated: number; 
               className="therm-bubble"
               style={{
                 left: `${20 + i * 18}%`,
-                animationDelay: `${i * 0.9}s`,
-                animationDuration: `${3.5 + i * 0.7}s`,
+                animationDelay: `${i * 0.6}s`,
+                animationDuration: `${bubbleDurBase + i * 0.5}s`,
               }}
             />
           ))}
