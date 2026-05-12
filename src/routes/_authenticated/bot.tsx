@@ -564,11 +564,4 @@ function BotPage() {
   );
 }
 
-function Tiny({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded border border-border/40 bg-background/30 p-1.5">
-      <div className="text-[9px] uppercase text-muted-foreground">{label}</div>
-      <div className="text-[11px] font-semibold">{value}</div>
-    </div>
-  );
-}
+
