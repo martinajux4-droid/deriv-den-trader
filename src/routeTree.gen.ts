@@ -14,10 +14,15 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTradeRouteImport } from './routes/_authenticated/trade'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedManualRouteImport } from './routes/_authenticated/manual'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedBotRouteImport } from './routes/_authenticated/bot'
 import { Route as AuthDerivCallbackRouteImport } from './routes/auth.deriv.callback'
+import { Route as AuthenticatedManualRiseFallRouteImport } from './routes/_authenticated/manual.rise-fall'
+import { Route as AuthenticatedManualOverUnderRouteImport } from './routes/_authenticated/manual.over-under'
+import { Route as AuthenticatedManualMatchesDiffersRouteImport } from './routes/_authenticated/manual.matches-differs'
+import { Route as AuthenticatedManualEvenOddRouteImport } from './routes/_authenticated/manual.even-odd'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -43,6 +48,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedManualRoute = AuthenticatedManualRouteImport.update({
+  id: '/manual',
+  path: '/manual',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
   id: '/history',
   path: '/history',
@@ -63,6 +73,30 @@ const AuthDerivCallbackRoute = AuthDerivCallbackRouteImport.update({
   path: '/auth/deriv/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedManualRiseFallRoute =
+  AuthenticatedManualRiseFallRouteImport.update({
+    id: '/rise-fall',
+    path: '/rise-fall',
+    getParentRoute: () => AuthenticatedManualRoute,
+  } as any)
+const AuthenticatedManualOverUnderRoute =
+  AuthenticatedManualOverUnderRouteImport.update({
+    id: '/over-under',
+    path: '/over-under',
+    getParentRoute: () => AuthenticatedManualRoute,
+  } as any)
+const AuthenticatedManualMatchesDiffersRoute =
+  AuthenticatedManualMatchesDiffersRouteImport.update({
+    id: '/matches-differs',
+    path: '/matches-differs',
+    getParentRoute: () => AuthenticatedManualRoute,
+  } as any)
+const AuthenticatedManualEvenOddRoute =
+  AuthenticatedManualEvenOddRouteImport.update({
+    id: '/even-odd',
+    path: '/even-odd',
+    getParentRoute: () => AuthenticatedManualRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -70,8 +104,13 @@ export interface FileRoutesByFullPath {
   '/bot': typeof AuthenticatedBotRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/history': typeof AuthenticatedHistoryRoute
+  '/manual': typeof AuthenticatedManualRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/trade': typeof AuthenticatedTradeRoute
+  '/manual/even-odd': typeof AuthenticatedManualEvenOddRoute
+  '/manual/matches-differs': typeof AuthenticatedManualMatchesDiffersRoute
+  '/manual/over-under': typeof AuthenticatedManualOverUnderRoute
+  '/manual/rise-fall': typeof AuthenticatedManualRiseFallRoute
   '/auth/deriv/callback': typeof AuthDerivCallbackRoute
 }
 export interface FileRoutesByTo {
@@ -80,8 +119,13 @@ export interface FileRoutesByTo {
   '/bot': typeof AuthenticatedBotRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/history': typeof AuthenticatedHistoryRoute
+  '/manual': typeof AuthenticatedManualRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/trade': typeof AuthenticatedTradeRoute
+  '/manual/even-odd': typeof AuthenticatedManualEvenOddRoute
+  '/manual/matches-differs': typeof AuthenticatedManualMatchesDiffersRoute
+  '/manual/over-under': typeof AuthenticatedManualOverUnderRoute
+  '/manual/rise-fall': typeof AuthenticatedManualRiseFallRoute
   '/auth/deriv/callback': typeof AuthDerivCallbackRoute
 }
 export interface FileRoutesById {
@@ -92,8 +136,13 @@ export interface FileRoutesById {
   '/_authenticated/bot': typeof AuthenticatedBotRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRoute
+  '/_authenticated/manual': typeof AuthenticatedManualRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/trade': typeof AuthenticatedTradeRoute
+  '/_authenticated/manual/even-odd': typeof AuthenticatedManualEvenOddRoute
+  '/_authenticated/manual/matches-differs': typeof AuthenticatedManualMatchesDiffersRoute
+  '/_authenticated/manual/over-under': typeof AuthenticatedManualOverUnderRoute
+  '/_authenticated/manual/rise-fall': typeof AuthenticatedManualRiseFallRoute
   '/auth/deriv/callback': typeof AuthDerivCallbackRoute
 }
 export interface FileRouteTypes {
@@ -104,8 +153,13 @@ export interface FileRouteTypes {
     | '/bot'
     | '/dashboard'
     | '/history'
+    | '/manual'
     | '/settings'
     | '/trade'
+    | '/manual/even-odd'
+    | '/manual/matches-differs'
+    | '/manual/over-under'
+    | '/manual/rise-fall'
     | '/auth/deriv/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -114,8 +168,13 @@ export interface FileRouteTypes {
     | '/bot'
     | '/dashboard'
     | '/history'
+    | '/manual'
     | '/settings'
     | '/trade'
+    | '/manual/even-odd'
+    | '/manual/matches-differs'
+    | '/manual/over-under'
+    | '/manual/rise-fall'
     | '/auth/deriv/callback'
   id:
     | '__root__'
@@ -125,8 +184,13 @@ export interface FileRouteTypes {
     | '/_authenticated/bot'
     | '/_authenticated/dashboard'
     | '/_authenticated/history'
+    | '/_authenticated/manual'
     | '/_authenticated/settings'
     | '/_authenticated/trade'
+    | '/_authenticated/manual/even-odd'
+    | '/_authenticated/manual/matches-differs'
+    | '/_authenticated/manual/over-under'
+    | '/_authenticated/manual/rise-fall'
     | '/auth/deriv/callback'
   fileRoutesById: FileRoutesById
 }
@@ -174,6 +238,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/manual': {
+      id: '/_authenticated/manual'
+      path: '/manual'
+      fullPath: '/manual'
+      preLoaderRoute: typeof AuthenticatedManualRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/history': {
       id: '/_authenticated/history'
       path: '/history'
@@ -202,13 +273,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDerivCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/manual/rise-fall': {
+      id: '/_authenticated/manual/rise-fall'
+      path: '/rise-fall'
+      fullPath: '/manual/rise-fall'
+      preLoaderRoute: typeof AuthenticatedManualRiseFallRouteImport
+      parentRoute: typeof AuthenticatedManualRoute
+    }
+    '/_authenticated/manual/over-under': {
+      id: '/_authenticated/manual/over-under'
+      path: '/over-under'
+      fullPath: '/manual/over-under'
+      preLoaderRoute: typeof AuthenticatedManualOverUnderRouteImport
+      parentRoute: typeof AuthenticatedManualRoute
+    }
+    '/_authenticated/manual/matches-differs': {
+      id: '/_authenticated/manual/matches-differs'
+      path: '/matches-differs'
+      fullPath: '/manual/matches-differs'
+      preLoaderRoute: typeof AuthenticatedManualMatchesDiffersRouteImport
+      parentRoute: typeof AuthenticatedManualRoute
+    }
+    '/_authenticated/manual/even-odd': {
+      id: '/_authenticated/manual/even-odd'
+      path: '/even-odd'
+      fullPath: '/manual/even-odd'
+      preLoaderRoute: typeof AuthenticatedManualEvenOddRouteImport
+      parentRoute: typeof AuthenticatedManualRoute
+    }
   }
 }
+
+interface AuthenticatedManualRouteChildren {
+  AuthenticatedManualEvenOddRoute: typeof AuthenticatedManualEvenOddRoute
+  AuthenticatedManualMatchesDiffersRoute: typeof AuthenticatedManualMatchesDiffersRoute
+  AuthenticatedManualOverUnderRoute: typeof AuthenticatedManualOverUnderRoute
+  AuthenticatedManualRiseFallRoute: typeof AuthenticatedManualRiseFallRoute
+}
+
+const AuthenticatedManualRouteChildren: AuthenticatedManualRouteChildren = {
+  AuthenticatedManualEvenOddRoute: AuthenticatedManualEvenOddRoute,
+  AuthenticatedManualMatchesDiffersRoute:
+    AuthenticatedManualMatchesDiffersRoute,
+  AuthenticatedManualOverUnderRoute: AuthenticatedManualOverUnderRoute,
+  AuthenticatedManualRiseFallRoute: AuthenticatedManualRiseFallRoute,
+}
+
+const AuthenticatedManualRouteWithChildren =
+  AuthenticatedManualRoute._addFileChildren(AuthenticatedManualRouteChildren)
 
 interface AuthenticatedRouteChildren {
   AuthenticatedBotRoute: typeof AuthenticatedBotRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
+  AuthenticatedManualRoute: typeof AuthenticatedManualRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTradeRoute: typeof AuthenticatedTradeRoute
 }
@@ -217,6 +335,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedBotRoute: AuthenticatedBotRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
+  AuthenticatedManualRoute: AuthenticatedManualRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTradeRoute: AuthenticatedTradeRoute,
 }

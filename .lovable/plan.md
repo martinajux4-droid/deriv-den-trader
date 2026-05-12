@@ -1,50 +1,61 @@
-## Scope
+## Manual Trading Terminal — Premium Strategy Pages
 
-This is a very large upgrade touching the bot engine, trade terminal, market watch, risk management, AI analysis, history/analytics, and global UI polish. To ship it well without a 30-minute mega-edit that risks breaking the working Deriv connection, I'll deliver it in **3 sequenced phases**. Each phase is independently shippable and testable on your demo account before moving to the next.
+Build a dedicated **Manual Trading Terminal** with one clean page per strategy (Even/Odd, Over/Under, Matches/Differs, Rise/Fall), inspired by hifextrader.com but redesigned for an institutional, Apple-clean, Bloomberg-grade feel.
 
----
+### New routes (file-based, TanStack)
 
-### Phase 1 — Engine & Risk (highest impact, fixes real bugs)
+```
+src/routes/_authenticated/manual.tsx              -> /manual (hub: 4 strategy cards)
+src/routes/_authenticated/manual.even-odd.tsx     -> /manual/even-odd
+src/routes/_authenticated/manual.over-under.tsx   -> /manual/over-under
+src/routes/_authenticated/manual.matches-differs.tsx -> /manual/matches-differs
+src/routes/_authenticated/manual.rise-fall.tsx    -> /manual/rise-fall
+```
 
-Goal: bot becomes safe, smart, and stops failing on "duration not offered".
+Add **Manual Terminal** entry to `AppShell` sidebar nav.
 
-1. **Contract validator** — new `src/lib/deriv-contracts.ts` that calls Deriv `contracts_for` once per symbol, caches supported `contract_type` + `duration`/`duration_unit` ranges. Bot auto-snaps duration into the supported range and skips strategies the symbol doesn't support. Eliminates the "Trading is not offered for this duration" error.
-2. **AI analysis core** — new `src/lib/ai-analysis.ts` with one shared engine producing: trend dir & strength, momentum, volatility (stdev of returns), buy/sell pressure, RSI, EMA9/21 cross, support/resistance from rolling extremes, reversal probability, confidence %, entry score, risk score, plain-English recommendation. Used by signals, insights, and the bot.
-3. **Bot engine v2** (`src/lib/bot-engine.ts` rewrite) with:
-   - Modes: **safe / normal / aggressive** + **auto / semi-auto / manual**
-   - Risk: take-profit, stop-loss, daily target, max drawdown, max trades, max consecutive losses (auto-pause), cooldown after losses, smart-recovery, emergency stop
-   - Stake: fixed, smart-adjust (scale by AI confidence), martingale, anti-martingale
-   - Strategies: Rise/Fall AI, Even/Odd AI, Over/Under AI, Trend Following, Smart Scalping, Momentum, Sniper Entry, Breakout, Reversal, S/R Bounce, Volatility Spike Hunter
-   - States surfaced live: `scanning | waiting_entry | executing | managing | paused | risk_lock | stopped`
-   - Only fires when AI confidence ≥ user threshold
+### Shared layout
 
-### Phase 2 — Bot Console & Trade Terminal UI
+Each strategy page uses `ManualStrategyLayout`:
+- Top: market selector (volatility indices) + live price ticker
+- Left/Center: **Market Meter** (strategy-specific visualization)
+- Right (or below on mobile): **Trade Inputs** (Stake, Take Profit, Max Loss, Martingale, Ticks) + collapsible "Advanced" (Duration, Digit prediction, Risk multiplier)
+- Action buttons: START / STOP / SAFE MODE
+- Bottom: AI Momentum strip + compact Trade History table
 
-4. **Bot console** (`/bot`) redesign: glass cards, strategy picker grid (each card shows win rate / confidence / risk / recommended market / expected ROI), risk manager panel, live status pill, P&L curve, recent decisions log, Start / Stop / **Pause** / **Resume** / **Emergency Stop** controls.
-5. **Trade terminal** (`/trade`) redesign: bigger candlestick chart with EMA9/21, RSI sub-pane, Bollinger Bands toggle, S/R overlays, AI overlay (entry zones), floating order panel, live activity stream, market heatmap strip.
-6. **Market watch** expanded: V10, V25, V50, V75, V100, Boom 300/500/1000, Crash 300/500/1000 — each tile shows price, mini sparkline, AI signal, trend arrow, buy/sell pressure bars, volatility score, sentiment label.
+Mobile: single column, large tap targets, glass cards, sticky action bar.
 
-### Phase 3 — Analytics & Polish
+### New components
 
-7. **History & analytics** (`/history`): P&L curve, daily/weekly bars, win/loss streak tracker, AI-accuracy chart (predicted vs actual), strategy leaderboard, heatmap by hour/day, full trade journal table.
-8. **Global polish**: skeleton loaders, glow indicators on live data, floating AI assistant button (uses Lovable AI to answer "what should I trade now?" using the analysis engine), micro-animations, mobile pass.
+- `src/components/manual/ManualStrategyLayout.tsx` — shared shell (header, background, bottom history, action bar)
+- `src/components/manual/MarketMeter.tsx` — wraps strategy-specific meters
+- `src/components/manual/meters/EvenOddDial.tsx` — circular watch-style dial (blue/red split)
+- `src/components/manual/meters/OverUnderHistogram.tsx` — twin histogram bars + probability curve
+- `src/components/manual/meters/DigitFrequencyMatrix.tsx` — 0-9 frequency grid + heatmap
+- `src/components/manual/meters/RiseFallPressure.tsx` — bull/bear dominance gauge + wave
+- `src/components/manual/TradeInputs.tsx` — minimal form (stake, TP, ML, martingale, ticks) + collapsible advanced
+- `src/components/manual/AIMomentumStrip.tsx` — momentum %, trend pressure, entry quality, confidence, readiness with status text
+- `src/components/manual/LivePriceStream.tsx` — large smooth animated digits, glow transitions
+- `src/components/manual/ManualHistoryTable.tsx` — compact rows; filter by strategy; clear + export CSV
+- `src/components/manual/ActionButtons.tsx` — START / STOP / SAFE MODE with glow
 
----
+Color tokens (added to `src/styles.css`):
+- `--meter-bull` (blue), `--meter-bear` (red), `--meter-momentum` (cyan), `--meter-ai` (gold)
+- `--glass-bg`, `--glass-border` for unified glassmorphism
 
-### Technical notes
+### Logic / data
 
-- All trading still goes through `DerivClient` over WebSocket — no schema changes required.
-- AI uses local quantitative heuristics on tick streams (no API calls, instant). I can later wire Lovable AI Gateway for the floating assistant only.
-- Bot status keeps using `use-bot-status.ts` so the dashboard widget stays in sync.
-- Trades continue to persist to `trades` + `bot_runs` tables (already exist with RLS).
-- No DB migrations needed for phase 1–3.
+- Reuse `useTicks`, `useDeriv`, `analyze()` from `src/lib/ai-analysis.ts`, and `digitStats()` for digit pages.
+- Manual trading uses `client.getProposal` + `buyContract` (same pattern as `TradePanel.tsx`); each strategy maps to its contract types:
+  - Even/Odd → `DIGITEVEN` / `DIGITODD`
+  - Over/Under → `DIGITOVER` / `DIGITUNDER`
+  - Matches/Differs → `DIGITMATCH` / `DIGITDIFF`
+  - Rise/Fall → `CALL` / `PUT`
+- Auto-trading loop with martingale + TP/ML stop is local to the strategy page (lightweight, no changes to `bot-engine.ts`).
+- Trade history reads from `trades` table filtered by `contract_type`.
 
----
+### Out of scope (this iteration)
 
-### Confirm before I start
-
-I'll begin with **Phase 1** now if you say "go". Want any of these tweaked first?
-
-- Skip a phase or reorder?
-- Drop any strategy from the list?
-- Default risk preset (safe / normal / aggressive)?
+- Server-side migrations (none needed — `trades` table already supports all contract types)
+- Sound engine changes (already exists)
+- Existing `/bot` automated dashboard stays untouched
