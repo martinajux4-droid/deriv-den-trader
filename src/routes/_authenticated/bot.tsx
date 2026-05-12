@@ -468,29 +468,7 @@ function BotPage() {
             )}
           </Card>
 
-          <Card className="p-0">
-            <div className="border-b border-border/60 px-4 py-2 text-xs uppercase tracking-wider text-muted-foreground">
-              Activity log
-            </div>
-            <div className="max-h-[320px] overflow-auto">
-              {logs.length === 0 ? (
-                <div className="p-4 text-xs text-muted-foreground">No activity yet. Start the bot.</div>
-              ) : (
-                <ul className="divide-y divide-border text-xs">
-                  {logs.map((l, i) => (
-                    <li key={i} className="flex gap-3 px-3 py-2">
-                      <span className="num text-muted-foreground">{new Date(l.t).toLocaleTimeString()}</span>
-                      <span className={cn(
-                        l.tone === "good" && "text-bull",
-                        l.tone === "bad" && "text-bear",
-                        l.tone === "warn" && "text-warning",
-                      )}>{l.msg}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </Card>
+          <LiveTradeFeed />
         </div>
       </div>
     </div>
