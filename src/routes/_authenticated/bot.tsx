@@ -515,6 +515,7 @@ function BotPage() {
           <AIMarketScanner
             activeSymbol={symbol}
             minConfidence={Number(minConfidence) || 70}
+            running={running}
             onSelectMarket={(s) => {
               if (running) {
                 toast.message(`AI suggests switching to ${s} — stop the bot to change market`);
