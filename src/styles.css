@@ -295,3 +295,47 @@
   width: 200%;
   animation: hero-wave 30s linear infinite;
 }
+
+/* ===== AI bot scanner / launch utilities ===== */
+@keyframes scan-sweep {
+  0%   { transform: translateY(-100%); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateY(120%); opacity: 0; }
+}
+@keyframes radar-spin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes neural-dash {
+  to { stroke-dashoffset: -200; }
+}
+@keyframes ai-ring-pulse {
+  0%, 100% { transform: scale(1); opacity: .8; }
+  50%      { transform: scale(1.06); opacity: .35; }
+}
+@keyframes signal-flash {
+  0%, 100% { box-shadow: 0 0 0 0 oklch(0.82 0.15 85 / 0); }
+  50%      { box-shadow: 0 0 60px 8px oklch(0.82 0.15 85 / 0.45); }
+}
+@keyframes type-caret { 50% { opacity: 0; } }
+
+.scan-sweep {
+  position: absolute; left: 0; right: 0; height: 35%;
+  background: linear-gradient(180deg, transparent, oklch(0.62 0.18 250 / 0.18), transparent);
+  animation: scan-sweep 2.6s ease-in-out infinite;
+  pointer-events: none;
+}
+.radar-spin { animation: radar-spin 6s linear infinite; transform-origin: center; }
+.ai-ring-pulse { animation: ai-ring-pulse 2.4s ease-in-out infinite; }
+.signal-flash { animation: signal-flash 1.6s ease-in-out infinite; }
+.type-caret::after {
+  content: "▍"; margin-left: 2px; animation: type-caret 1s steps(1) infinite;
+  color: oklch(0.82 0.15 85);
+}
+.bg-grid-fine {
+  background-image:
+    linear-gradient(oklch(1 0 0 / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(1 0 0 / 0.05) 1px, transparent 1px);
+  background-size: 32px 32px, 32px 32px;
+}

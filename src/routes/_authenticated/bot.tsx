@@ -10,18 +10,16 @@ import {
 import type { Analysis } from "@/lib/ai-analysis";
 import { DERIV_SYMBOLS } from "@/lib/deriv-symbols";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import {
-  Play, Square, Pause, Zap, AlertTriangle, Brain, Shield, Target,
-  Activity, Gauge, TrendingUp, TrendingDown,
-} from "lucide-react";
+import { AlertTriangle, Settings2, ChevronDown, Brain } from "lucide-react";
 import { setBotStatus, emitBotEvent, emitTakeProfit } from "@/hooks/use-bot-status";
 import { LiveTradeFeed } from "@/components/LiveTradeFeed";
+import { BotLaunchOverlay } from "@/components/BotLaunchOverlay";
+import { BotCommandCenter } from "@/components/BotCommandCenter";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/bot")({
@@ -71,7 +69,9 @@ function BotPage() {
   const [state, setState] = useState<BotState>("idle");
   const [stateDetail, setStateDetail] = useState<string>("");
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
-  const [logs, setLogs] = useState<{ t: number; msg: string; tone?: string }[]>([]);
+  const [, setLogs] = useState<{ t: number; msg: string; tone?: string }[]>([]);
+  const [launching, setLaunching] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [pnl, setPnl] = useState(0);
   const [trades, setTrades] = useState(0);
   const [wins, setWins] = useState(0);
@@ -90,6 +90,7 @@ function BotPage() {
 
   const start = async () => {
     if (!client || !active || !user) { toast.error("Connect a Deriv account first"); return; }
+    setLaunching(true);
     const cfg: StrategyConfig = {
       type: strategy, symbol, stake: Number(stake),
       duration: Number(duration), duration_unit: unit,
@@ -276,20 +277,58 @@ function BotPage() {
   }, []);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <BotLaunchOverlay open={launching} onDone={() => setLaunching(false)} />
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">AI Trading Engine</h1>
-          <p className="text-xs text-muted-foreground">Institutional automated execution · {active ? (active.is_virtual ? "Demo" : "Live") + " · " + active.loginid : "no account"}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <StatePill state={state} running={running} paused={paused} detail={stateDetail} />
+          <h1 className="text-3xl font-semibold tracking-tight">AI Trading Engine</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            One-click automated trading · {active ? (active.is_virtual ? "Demo" : "Live") + " · " + active.loginid : "no account connected"}
+          </p>
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[420px_1fr]">
+      {/* HERO COMMAND CENTER */}
+      <BotCommandCenter
+        running={running}
+        paused={paused}
+        state={state}
+        stateDetail={stateDetail}
+        symbol={symbol}
+        strategyLabel={meta.name}
+        pnl={pnl}
+        trades={trades}
+        wins={wins}
+        losses={losses}
+        activeTrades={activeTrades}
+        currency={balance?.currency || "USD"}
+        analysis={analysis}
+        canStart={!!(client && active && user)}
+        onStart={start}
+        onPause={togglePause}
+        onStop={stop}
+        onEmergency={emergency}
+      />
+
+      {/* TWO-COLUMN: settings (collapsible) + live feed */}
+      <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
         {/* LEFT: configuration */}
-        <Card className="space-y-3 p-5">
+        <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
+          <Card className="card-premium space-y-3 p-5">
+            <CollapsibleTrigger className="flex w-full items-center justify-between gap-3 text-left">
+              <div className="flex items-center gap-2">
+                <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary/15 text-primary">
+                  <Settings2 className="h-4 w-4" />
+                </span>
+                <div>
+                  <div className="text-sm font-semibold">Strategy &amp; Risk</div>
+                  <div className="text-[11px] text-muted-foreground">{meta.name} · {symbol} · stake {stake}</div>
+                </div>
+              </div>
+              <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", settingsOpen && "rotate-180")} />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-3 pt-2">
           <div>
             <Label>Strategy</Label>
             <Select value={strategy} onValueChange={(v) => setStrategy(v as StrategyType)}>
@@ -381,92 +420,46 @@ function BotPage() {
             <div><Label>Multiplier</Label><Input className="num" value={martingale} onChange={(e) => setMartingale(e.target.value)} /></div>
           )}
 
-          <div className="space-y-2 pt-2">
-            {!running ? (
-              <Button onClick={start} className="w-full bg-gold-gradient text-primary-foreground hover:opacity-90" size="lg" disabled={!active}>
-                <Play className="mr-2 h-4 w-4" /> Start AI Bot
-              </Button>
-            ) : (
-              <div className="grid grid-cols-3 gap-2">
-                <Button onClick={togglePause} variant="secondary">
-                  <Pause className="mr-1 h-4 w-4" />{paused ? "Resume" : "Pause"}
-                </Button>
-                <Button onClick={stop} variant="outline">
-                  <Square className="mr-1 h-4 w-4" /> Stop
-                </Button>
-                <Button onClick={emergency} variant="destructive">
-                  <Zap className="mr-1 h-4 w-4" /> Kill
-                </Button>
-              </div>
-            )}
-            <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+            <p className="flex items-center gap-1 pt-1 text-[10px] text-muted-foreground">
               <AlertTriangle className="h-3 w-3 text-warning" /> Bot runs in your browser. Closing this tab stops it.
             </p>
-          </div>
-        </Card>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
 
-        {/* RIGHT: live telemetry */}
+        {/* RIGHT: live activity */}
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <Stat icon={<Target className="h-3 w-3" />} label="Live P&L"
-              value={`${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)} ${balance?.currency || ""}`}
-              tone={pnl >= 0 ? "bull" : "bear"} />
-            <Stat icon={<Activity className="h-3 w-3" />} label="Trades" value={`${trades}`} />
-            <Stat icon={<Brain className="h-3 w-3" />} label="AI Confidence"
-              value={analysis ? `${analysis.confidence}%` : "—"} tone="primary" bar={analysis?.confidence} />
-            <Stat icon={<Shield className="h-3 w-3" />} label="Risk Score"
-              value={analysis ? `${analysis.riskScore}%` : "—"} tone="warn" bar={analysis?.riskScore} />
-          </div>
-
-          <Card className="p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="grid h-8 w-8 place-items-center rounded-lg bg-accent/15 text-accent">
-                  <Brain className="h-4 w-4" />
-                </div>
-                <div>
-                  <div className="text-sm font-semibold">AI Market Read · {symbol}</div>
-                  <div className="text-[11px] text-muted-foreground">Updates every tick</div>
-                </div>
+          <div className="card-premium overflow-hidden p-5">
+            <div className="mb-3 flex items-center gap-2">
+              <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent/15 text-accent">
+                <Brain className="h-4 w-4" />
+              </span>
+              <div>
+                <div className="text-sm font-semibold">AI Market Read · {symbol}</div>
+                <div className="text-[11px] text-muted-foreground">Reasoning updates every tick</div>
               </div>
-              {analysis && (
-                <Badge variant="outline" className={cn("text-[10px]",
-                  analysis.recommendation === "RISE" && "border-bull/40 text-bull",
-                  analysis.recommendation === "FALL" && "border-bear/40 text-bear")}>
-                  {analysis.recommendation === "RISE" ? <TrendingUp className="mr-1 h-3 w-3"/> :
-                   analysis.recommendation === "FALL" ? <TrendingDown className="mr-1 h-3 w-3"/> :
-                   <Gauge className="mr-1 h-3 w-3"/>}
-                  {analysis.recommendation}
-                </Badge>
-              )}
             </div>
             {!analysis ? (
-              <div className="text-xs text-muted-foreground">Waiting for tick stream…</div>
+              <div className="rounded-xl border border-dashed border-border/60 bg-background/30 p-6 text-center text-xs text-muted-foreground">
+                Waiting for tick stream…
+              </div>
             ) : (
               <div className="space-y-3">
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-                  <Mini label="Trend" value={`${analysis.trendDir} · ${analysis.trendStrength.toFixed(0)}%`} />
-                  <Mini label="Momentum" value={`${analysis.momentum >= 0 ? "+" : ""}${analysis.momentum.toFixed(3)}%`} />
-                  <Mini label="Volatility" value={`${analysis.volatility.toFixed(0)}`} />
-                  <Mini label="RSI" value={analysis.rsi.toFixed(0)} />
-                  <Mini label="EMA" value={analysis.emaCross} />
-                  <Mini label="Entry" value={`${analysis.entryScore}%`} />
-                </div>
-                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm leading-relaxed">
                   {analysis.recommendationText}
                 </div>
-                <div className="rounded-lg border border-border/60 bg-background/30 p-3">
+                <div className="rounded-xl border border-border/60 bg-background/30 p-3">
                   <div className="mb-1.5 flex items-center justify-between text-[10px] uppercase text-muted-foreground">
                     <span>Buy / Sell pressure</span>
                     <span className="num text-foreground">{analysis.buyPressure}% / {analysis.sellPressure}%</span>
                   </div>
                   <div className="flex h-2 overflow-hidden rounded-full bg-bear/30">
-                    <div className="bg-bull transition-all" style={{ width: `${analysis.buyPressure}%` }} />
+                    <div className="bg-bull transition-all duration-500" style={{ width: `${analysis.buyPressure}%` }} />
                   </div>
                 </div>
               </div>
             )}
-          </Card>
+          </div>
 
           <LiveTradeFeed />
         </div>
@@ -475,61 +468,6 @@ function BotPage() {
   );
 }
 
-function StatePill({ state, running, paused, detail }: { state: BotState; running: boolean; paused: boolean; detail: string }) {
-  const map: Record<BotState, { label: string; className: string }> = {
-    idle:           { label: "IDLE",          className: "bg-muted text-muted-foreground" },
-    scanning:       { label: "SCANNING",      className: "bg-primary/15 text-primary" },
-    waiting_entry:  { label: "WAITING ENTRY", className: "bg-accent/15 text-accent" },
-    executing:      { label: "EXECUTING",     className: "bg-bull/15 text-bull" },
-    managing:       { label: "MANAGING",      className: "bg-bull/15 text-bull" },
-    paused:         { label: "PAUSED",        className: "bg-warning/15 text-warning" },
-    risk_lock:      { label: "RISK LOCK",     className: "bg-bear/15 text-bear" },
-    stopped:        { label: "STOPPED",       className: "bg-muted text-muted-foreground" },
-  };
-  const s = paused ? map.paused : map[state];
-  return (
-    <div className="flex items-center gap-2">
-      <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-wider", s.className)}>
-        <span className={cn("h-1.5 w-1.5 rounded-full", running && !paused ? "bg-current animate-pulse" : "bg-current")} />
-        {s.label}
-      </span>
-      {detail && <span className="hidden text-[11px] text-muted-foreground sm:block">{detail}</span>}
-    </div>
-  );
-}
-
-function Stat({ icon, label, value, tone, bar }: { icon: React.ReactNode; label: string; value: string; tone?: "bull" | "bear" | "primary" | "warn"; bar?: number }) {
-  const toneClass =
-    tone === "bull" ? "text-bull" :
-    tone === "bear" ? "text-bear" :
-    tone === "primary" ? "text-primary" :
-    tone === "warn" ? "text-warning" : "text-foreground";
-  return (
-    <div className="glass rounded-2xl p-3">
-      <div className="flex items-center gap-1 text-[10px] uppercase text-muted-foreground">{icon}{label}</div>
-      <div className={cn("num mt-1 text-xl font-semibold", toneClass)}>{value}</div>
-      {bar != null && (
-        <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-background/60">
-          <div className={cn("h-full",
-            tone === "primary" && "bg-primary",
-            tone === "warn" && "bg-warning",
-            tone === "bull" && "bg-bull",
-            tone === "bear" && "bg-bear",
-          )} style={{ width: `${Math.min(100, bar)}%` }} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Mini({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-border/60 bg-card/40 p-2">
-      <div className="text-[9px] uppercase text-muted-foreground">{label}</div>
-      <div className="num mt-0.5 truncate text-sm font-semibold">{value}</div>
-    </div>
-  );
-}
 function Tiny({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded border border-border/40 bg-background/30 p-1.5">
