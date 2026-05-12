@@ -109,7 +109,7 @@ export function MarketThermometer({ mode, symbol }: { mode: Mode; symbol: string
       {/* Layout: left bar | center ring | right bar */}
       <div className="relative grid grid-cols-[64px_1fr_64px] items-stretch gap-3 sm:grid-cols-[80px_1fr_80px] sm:gap-5">
         {/* LEFT liquid pressure bar */}
-        <LiquidBar side={left} animated={lA} bubbles={bubblesL} />
+        <LiquidBar side={left} animated={lA} bubbles={bubblesL} intensity={intensity} pulse={pulse} />
 
         {/* CENTER reactor */}
         <div className="relative mx-auto flex aspect-square w-full max-w-[320px] items-center justify-center">
@@ -195,7 +195,7 @@ export function MarketThermometer({ mode, symbol }: { mode: Mode; symbol: string
         </div>
 
         {/* RIGHT liquid pressure bar */}
-        <LiquidBar side={right} animated={rA} bubbles={bubblesR} />
+        <LiquidBar side={right} animated={rA} bubbles={bubblesR} intensity={intensity} pulse={pulse} />
       </div>
 
       {/* Side labels + percentages */}
@@ -244,16 +244,22 @@ export function MarketThermometer({ mode, symbol }: { mode: Mode; symbol: string
   );
 }
 
-function LiquidBar({ side, animated, bubbles }: { side: Side; animated: number; bubbles: unknown[] }) {
+function LiquidBar({
+  side, animated, bubbles, intensity, pulse,
+}: { side: Side; animated: number; bubbles: unknown[]; intensity: number; pulse: number }) {
   const h = Math.max(4, Math.min(100, animated));
+  const waveDur = `${Math.max(1.6, 4.5 - intensity * 2.6)}s`;
+  const bubbleDurBase = Math.max(2.2, 3.5 - intensity * 1.6);
   return (
     <div className="relative flex flex-col items-center">
       <div
+        key={`bar-${pulse}`}
         className="relative h-[260px] w-full overflow-hidden rounded-2xl border border-white/10 sm:h-[300px]"
         style={{
           background:
             "linear-gradient(180deg, oklch(1 0 0 / 0.04), oklch(0 0 0 / 0.4)), oklch(0.1 0.02 260)",
-          boxShadow: `inset 0 0 24px ${side.glow}, 0 0 24px -10px ${side.glow}`,
+          boxShadow: `inset 0 0 ${24 + intensity * 18}px ${side.glow}, 0 0 ${24 + intensity * 22}px -10px ${side.glow}`,
+          transition: "box-shadow .4s ease",
         }}
       >
         {/* tick scale */}
@@ -265,7 +271,12 @@ function LiquidBar({ side, animated, bubbles }: { side: Side; animated: number; 
         {/* liquid */}
         <div
           className="therm-liquid"
-          style={{ height: `${h}%`, ["--liquid-color" as any]: side.color }}
+          style={{
+            height: `${h}%`,
+            ["--liquid-color" as any]: side.color,
+            transition: "height .55s cubic-bezier(.2,.7,.3,1)",
+            ["--therm-wave-dur" as any]: waveDur,
+          }}
         >
           <div className="fill" />
           {bubbles.map((_, i) => (
@@ -274,8 +285,8 @@ function LiquidBar({ side, animated, bubbles }: { side: Side; animated: number; 
               className="therm-bubble"
               style={{
                 left: `${20 + i * 18}%`,
-                animationDelay: `${i * 0.9}s`,
-                animationDuration: `${3.5 + i * 0.7}s`,
+                animationDelay: `${i * 0.6}s`,
+                animationDuration: `${bubbleDurBase + i * 0.5}s`,
               }}
             />
           ))}
