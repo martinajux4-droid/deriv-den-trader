@@ -19,7 +19,7 @@ function Settings() {
   const { user } = useAuth();
   const { profile, accounts, reload } = useDeriv();
   const [displayName, setDisplayName] = useState("");
-  const [appId, setAppId] = useState("1089");
+  const [appId, setAppId] = useState("33fqoeBk3EYm24kiFofTH");
   const [stake, setStake] = useState("1");
   const [symbol, setSymbol] = useState("R_100");
 
