@@ -1,0 +1,2 @@
+ALTER TABLE public.profiles ALTER COLUMN deriv_app_id SET DEFAULT '33fqoeBk3EYm24kiFofTH';
+UPDATE public.profiles SET deriv_app_id = '33fqoeBk3EYm24kiFofTH' WHERE deriv_app_id = '1089' OR deriv_app_id IS NULL;
