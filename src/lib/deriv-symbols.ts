@@ -15,6 +15,10 @@ export const DERIV_SYMBOLS: DerivSymbol[] = [
   { symbol: "1HZ50V", name: "Volatility 50 (1s) Index", group: "1-second" },
   { symbol: "1HZ75V", name: "Volatility 75 (1s) Index", group: "1-second" },
   { symbol: "1HZ100V", name: "Volatility 100 (1s) Index", group: "1-second" },
+  { symbol: "BOOM1000", name: "Boom 1000 Index", group: "Boom & Crash" },
+  { symbol: "BOOM500", name: "Boom 500 Index", group: "Boom & Crash" },
+  { symbol: "CRASH1000", name: "Crash 1000 Index", group: "Boom & Crash" },
+  { symbol: "CRASH500", name: "Crash 500 Index", group: "Boom & Crash" },
 ];
 
 export const CONTRACT_TYPES = [
