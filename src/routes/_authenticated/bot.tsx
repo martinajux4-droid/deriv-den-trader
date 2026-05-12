@@ -20,6 +20,7 @@ import { setBotStatus, emitBotEvent, emitTakeProfit } from "@/hooks/use-bot-stat
 import { LiveTradeFeed } from "@/components/LiveTradeFeed";
 import { BotLaunchOverlay } from "@/components/BotLaunchOverlay";
 import { BotCommandCenter } from "@/components/BotCommandCenter";
+import { AIMarketScanner } from "@/components/AIMarketScanner";
 import { RiskManagementSetup, assessRisk, type RiskValues } from "@/components/RiskManagementSetup";
 import { cn } from "@/lib/utils";
 
@@ -52,8 +53,8 @@ function BotPage() {
   const [strategy, setStrategy] = useState<StrategyType>("sniper_entry");
   const [symbol, setSymbol] = useState("R_100");
   const [stake, setStake] = useState("1");
-  const [duration, setDuration] = useState("5");
-  const [unit, setUnit] = useState("t");
+  const [duration, setDuration] = useState("1");
+  const [unit, setUnit] = useState("m");
   const [barrier, setBarrier] = useState("5");
   const [martingale, setMartingale] = useState("2");
   const [tp, setTp] = useState("10");
@@ -472,6 +473,19 @@ function BotPage() {
 
         {/* RIGHT: live activity */}
         <div className="space-y-4">
+          <AIMarketScanner
+            activeSymbol={symbol}
+            minConfidence={Number(minConfidence) || 70}
+            onSelectMarket={(s) => {
+              if (running) {
+                toast.message(`AI suggests switching to ${s} — stop the bot to change market`);
+                return;
+              }
+              setSymbol(s);
+              toast.success(`Switched to ${s} · stronger momentum detected`);
+            }}
+          />
+
           <div className="card-premium overflow-hidden p-5">
             <div className="mb-3 flex items-center gap-2">
               <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent/15 text-accent">
