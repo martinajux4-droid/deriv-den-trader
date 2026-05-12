@@ -148,7 +148,7 @@ export function MarketThermometer({ mode, symbol }: { mode: Mode; symbol: string
 
   return (
     <div
-      className="therm-stage relative w-full p-3 sm:p-6"
+      className="therm-stage relative w-full p-2.5 sm:p-6"
       style={{ ["--therm-glow" as any]: dominant.glow }}
     >
       {/* Ambient layers */}
@@ -168,15 +168,16 @@ export function MarketThermometer({ mode, symbol }: { mode: Mode; symbol: string
         />
       ))}
 
-      {/* Mobile: center reactor stacked above bars. sm+: classic 3-column. */}
-      <div className="relative grid grid-cols-2 gap-3 sm:grid-cols-[80px_1fr_80px] sm:items-stretch sm:gap-5">
+      {/* Compact 3-column layout on every viewport — slim bars flank the reactor */}
+      <div className="relative grid grid-cols-[44px_1fr_44px] items-center gap-2 sm:grid-cols-[80px_1fr_80px] sm:items-stretch sm:gap-5">
         {/* LEFT liquid pressure bar */}
-        <div className="order-2 sm:order-1 sm:col-auto">
-          <LiquidBar side={left} animated={lA} bubbles={bubblesL} intensity={intensity} pulse={pulse} compact={isMobile} />
-        </div>
+        <LiquidBar side={left} animated={lA} bubbles={bubblesL} intensity={intensity} pulse={pulse} compact={isMobile} />
 
         {/* CENTER reactor */}
-        <div className="relative order-1 col-span-2 mx-auto flex aspect-square w-full max-w-[260px] items-center justify-center sm:order-2 sm:col-span-1 sm:max-w-[320px]">
+        <div
+          className="relative mx-auto flex aspect-square w-full items-center justify-center"
+          style={{ maxWidth: "min(190px, 56vw)" }}
+        >
           {/* Outer rotating ticks */}
           <svg viewBox="0 0 200 200" className="therm-ring-rotate absolute inset-0 h-full w-full opacity-60">
             {tickMarks.map((_, i) => {
@@ -237,20 +238,20 @@ export function MarketThermometer({ mode, symbol }: { mode: Mode; symbol: string
             {mode === "even-odd" ? (
               <>
                 <div className="text-[9px] font-medium uppercase tracking-[0.22em] text-muted-foreground">Last digit</div>
-                <div key={lastDigit} className="digit-pop num text-5xl font-bold sm:text-6xl" style={{ color: COLORS.ai, textShadow: `0 0 20px ${COLORS.ai}` }}>
+                <div key={lastDigit} className="digit-pop num text-4xl font-bold leading-none sm:text-6xl" style={{ color: COLORS.ai, textShadow: `0 0 20px ${COLORS.ai}` }}>
                   {lastDigit}
                 </div>
-                <div className="mt-1 text-[10px] uppercase tracking-[0.2em]" style={{ color: dominant.color }}>
+                <div className="mt-1 text-[9px] uppercase tracking-[0.2em] sm:text-[10px]" style={{ color: dominant.color }}>
                   {dominant.label} +{dom.toFixed(0)}%
                 </div>
               </>
             ) : (
               <>
                 <div className="text-[9px] font-medium uppercase tracking-[0.22em] text-muted-foreground">Dominance</div>
-                <div className="num text-4xl font-bold sm:text-5xl" style={{ color: dominant.color, textShadow: `0 0 20px ${dominant.glow}` }}>
-                  {dom.toFixed(0)}<span className="text-2xl opacity-70">%</span>
+                <div className="num text-3xl font-bold leading-none sm:text-5xl" style={{ color: dominant.color, textShadow: `0 0 20px ${dominant.glow}` }}>
+                  {dom.toFixed(0)}<span className="text-lg opacity-70 sm:text-2xl">%</span>
                 </div>
-                <div className="mt-1 text-[10px] uppercase tracking-[0.2em]" style={{ color: dominant.color }}>
+                <div className="mt-1 text-[9px] uppercase tracking-[0.2em] sm:text-[10px]" style={{ color: dominant.color }}>
                   {dominant.label} pressure
                 </div>
               </>
@@ -259,26 +260,24 @@ export function MarketThermometer({ mode, symbol }: { mode: Mode; symbol: string
         </div>
 
         {/* RIGHT liquid pressure bar */}
-        <div className="order-3 sm:col-auto">
-          <LiquidBar side={right} animated={rA} bubbles={bubblesR} intensity={intensity} pulse={pulse} compact={isMobile} />
-        </div>
+        <LiquidBar side={right} animated={rA} bubbles={bubblesR} intensity={intensity} pulse={pulse} compact={isMobile} />
       </div>
 
       {/* Side labels + percentages */}
-      <div className="relative mt-4 grid grid-cols-2 gap-3 text-xs sm:gap-6">
-        <div className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2">
+      <div className="relative mt-3 grid grid-cols-2 gap-2 text-xs sm:mt-4 sm:gap-6">
+        <div className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] px-2.5 py-1.5 sm:px-3 sm:py-2">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full" style={{ background: left.color, boxShadow: `0 0 8px ${left.color}` }} />
-            <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{left.label}</span>
+            <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{left.label}</span>
           </div>
-          <span className="num text-base font-semibold" style={{ color: left.color }}>{lA.toFixed(0)}%</span>
+          <span className="num text-sm font-semibold sm:text-base" style={{ color: left.color }}>{lA.toFixed(0)}%</span>
         </div>
-        <div className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2">
+        <div className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] px-2.5 py-1.5 sm:px-3 sm:py-2">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full" style={{ background: right.color, boxShadow: `0 0 8px ${right.color}` }} />
-            <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{right.label}</span>
+            <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{right.label}</span>
           </div>
-          <span className="num text-base font-semibold" style={{ color: right.color }}>{rA.toFixed(0)}%</span>
+          <span className="num text-sm font-semibold sm:text-base" style={{ color: right.color }}>{rA.toFixed(0)}%</span>
         </div>
       </div>
 
