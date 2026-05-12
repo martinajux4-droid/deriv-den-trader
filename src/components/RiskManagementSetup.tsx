@@ -1,8 +1,9 @@
-import { useMemo } from "react";
-import { Shield, ShieldCheck, ShieldAlert, Sparkles, Brain, Lock, Gauge, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Shield, ShieldCheck, ShieldAlert, Sparkles, Brain, Lock, Gauge, AlertTriangle, CheckCircle2, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import type { RiskMode } from "@/lib/bot-engine";
 
@@ -39,9 +40,7 @@ export function assessRisk(v: RiskValues, balance?: number): RiskAssessment {
   if (!(stake > 0)) errors.push("Stake amount is required");
   if (!(sl > 0)) errors.push("Stop loss is required");
   if (!(tp > 0)) errors.push("Take profit is required");
-  if (!(trades > 0)) errors.push("Max trades is required");
   if (!(daily > 0)) errors.push("Daily loss limit is required");
-  if (!(streak > 0)) errors.push("Loss streak protection is required");
   if (!(conf >= 50 && conf <= 95)) errors.push("AI confidence must be 50–95%");
 
   let score = 0;
@@ -121,6 +120,7 @@ type Props = {
 };
 
 export function RiskManagementSetup({ values, onChange, balance, currency = "USD", assessment, locked }: Props) {
+  const [advOpen, setAdvOpen] = useState(false);
   const suggestedStake = useMemo(() => {
     if (!balance || balance <= 0) return null;
     return Math.max(0.35, Number((balance * 0.01).toFixed(2))); // 1% of balance
@@ -211,32 +211,6 @@ export function RiskManagementSetup({ values, onChange, balance, currency = "USD
                 placeholder="25.00"
               />
             </Field>
-            <Field label="Max trades" hint="Total trades the bot can place this session.">
-              <Input
-                inputMode="numeric" className="num h-11 text-base"
-                value={values.maxTrades} disabled={locked}
-                onChange={(e) => onChange({ maxTrades: e.target.value })}
-                placeholder="20"
-              />
-            </Field>
-            <Field label="Consecutive loss protection" hint="Stops bot after this many losses in a row." tone="warn">
-              <Input
-                inputMode="numeric" className="num h-11 text-base"
-                value={values.maxConsecLosses} disabled={locked}
-                onChange={(e) => onChange({ maxConsecLosses: e.target.value })}
-                placeholder="3"
-              />
-            </Field>
-            <Field label="Risk level" hint="Sets aggression of AI entry filter.">
-              <Select value={values.riskMode} onValueChange={(v) => onChange({ riskMode: v as RiskMode })} disabled={locked}>
-                <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="safe">Safe · capital first</SelectItem>
-                  <SelectItem value="normal">Normal · balanced</SelectItem>
-                  <SelectItem value="aggressive">Aggressive · max ROI</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
             <Field label="AI confidence filter" hint="Only trade when AI confidence is above this %.">
               <div className="relative">
                 <Input
@@ -249,6 +223,33 @@ export function RiskManagementSetup({ values, onChange, balance, currency = "USD
               </div>
             </Field>
           </div>
+
+          <Collapsible open={advOpen} onOpenChange={setAdvOpen}>
+            <CollapsibleTrigger className="flex w-full items-center justify-between rounded-xl border border-border/50 bg-background/40 px-3 py-2 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors">
+              <span className="flex items-center gap-2"><Settings2Icon /> Advanced settings</span>
+              <ChevronDown className={cn("h-4 w-4 transition-transform", advOpen && "rotate-180")} />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="grid grid-cols-1 gap-3 pt-3 sm:grid-cols-3">
+              <Field label="Max trades" hint="Optional cap per session.">
+                <Input inputMode="numeric" className="num h-11 text-base" value={values.maxTrades} disabled={locked}
+                  onChange={(e) => onChange({ maxTrades: e.target.value })} placeholder="20" />
+              </Field>
+              <Field label="Loss streak guard" hint="Stops bot after N losses in a row." tone="warn">
+                <Input inputMode="numeric" className="num h-11 text-base" value={values.maxConsecLosses} disabled={locked}
+                  onChange={(e) => onChange({ maxConsecLosses: e.target.value })} placeholder="3" />
+              </Field>
+              <Field label="Risk level" hint="AI aggression mode.">
+                <Select value={values.riskMode} onValueChange={(v) => onChange({ riskMode: v as RiskMode })} disabled={locked}>
+                  <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="safe">Safe · capital first</SelectItem>
+                    <SelectItem value="normal">Normal · balanced</SelectItem>
+                    <SelectItem value="aggressive">Aggressive · max ROI</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+            </CollapsibleContent>
+          </Collapsible>
 
           {assessment.errors.length > 0 && (
             <div className="rounded-xl border border-warning/40 bg-warning/10 p-3 text-xs text-warning">
