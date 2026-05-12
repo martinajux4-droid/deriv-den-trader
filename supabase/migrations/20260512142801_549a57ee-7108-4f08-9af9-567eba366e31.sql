@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ALTER COLUMN deriv_app_id SET DEFAULT '68610';
