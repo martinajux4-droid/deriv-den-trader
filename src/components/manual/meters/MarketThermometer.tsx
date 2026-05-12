@@ -282,23 +282,23 @@ export function MarketThermometer({ mode, symbol }: { mode: Mode; symbol: string
       </div>
 
       {/* AI insight strip */}
-      <div className="relative mt-4 overflow-hidden rounded-xl border border-white/5 bg-black/30 px-4 py-3">
+      <div className="relative mt-3 overflow-hidden rounded-xl border border-white/5 bg-black/30 px-3 py-2 sm:mt-4 sm:px-4 sm:py-3">
         <div className="flex items-center gap-2">
           <span className="relative flex h-2 w-2">
             <span className="absolute inset-0 animate-ping rounded-full" style={{ background: COLORS.ai, opacity: 0.6 }} />
             <span className="relative h-2 w-2 rounded-full" style={{ background: COLORS.ai }} />
           </span>
-          <span className="text-[10px] font-semibold uppercase tracking-[0.22em]" style={{ color: COLORS.ai }}>
-            Live market insight
+          <span className="text-[9px] font-semibold uppercase tracking-[0.18em] sm:text-[10px] sm:tracking-[0.22em]" style={{ color: COLORS.ai }}>
+            AI insight
           </span>
-          <span className="ml-auto text-[10px] uppercase tracking-wider text-muted-foreground">
+          <span className="ml-auto text-[9px] uppercase tracking-wider text-muted-foreground sm:text-[10px]">
             vol <span className="num text-foreground">{vol.toFixed(0)}%</span>
           </span>
         </div>
         <div className="relative mt-1 h-5 overflow-hidden">
           <div
             key={insightIdx}
-            className="therm-text-cycle absolute inset-0 truncate text-sm font-medium"
+            className="therm-text-cycle absolute inset-0 truncate text-xs font-medium sm:text-sm"
             style={{ color: dominant.color }}
           >
             {insights[insightIdx]}
@@ -316,19 +316,19 @@ function LiquidBar({
   const waveDur = `${Math.max(1.6, 4.5 - intensity * 2.6)}s`;
   const bubbleDurBase = Math.max(2.2, 3.5 - intensity * 1.6);
   return (
-    <div className="relative flex flex-col items-center">
+    <div className="relative mx-auto flex w-full max-w-[44px] flex-col items-center sm:max-w-none">
       <div
         key={`bar-${pulse}`}
-        className={`relative w-full overflow-hidden rounded-2xl border border-white/10 ${compact ? "h-[160px]" : "h-[260px]"} sm:h-[300px]`}
+        className={`relative w-full overflow-hidden rounded-full border border-white/10 sm:rounded-2xl ${compact ? "h-[170px]" : "h-[260px]"} sm:h-[300px]`}
         style={{
           background:
             "linear-gradient(180deg, oklch(1 0 0 / 0.04), oklch(0 0 0 / 0.4)), oklch(0.1 0.02 260)",
-          boxShadow: `inset 0 0 ${24 + intensity * 18}px ${side.glow}, 0 0 ${24 + intensity * 22}px -10px ${side.glow}`,
+          boxShadow: `inset 0 0 ${(compact ? 14 : 24) + intensity * (compact ? 10 : 18)}px ${side.glow}, 0 0 ${(compact ? 14 : 24) + intensity * (compact ? 12 : 22)}px -10px ${side.glow}`,
           transition: "box-shadow .4s ease",
         }}
       >
-        {/* tick scale */}
-        <div className="pointer-events-none absolute inset-y-2 left-1 flex flex-col justify-between opacity-40">
+        {/* tick scale (hidden on mobile to keep capsule clean) */}
+        <div className="pointer-events-none absolute inset-y-2 left-1 hidden flex-col justify-between opacity-40 sm:flex">
           {Array.from({ length: 11 }).map((_, i) => (
             <span key={i} className="block h-px w-2 bg-white/40" />
           ))}
@@ -364,16 +364,16 @@ function LiquidBar({
               "linear-gradient(120deg, oklch(1 0 0 / 0.12) 0%, transparent 30%, transparent 70%, oklch(0 0 0 / 0.25) 100%)",
           }}
         />
-        {/* value chip */}
+        {/* value chip — hidden on mobile (already shown in side label cards) */}
         <div
-          className="absolute left-1/2 top-2 -translate-x-1/2 rounded-md border border-white/10 bg-black/40 px-1.5 py-0.5 text-[10px] num font-semibold backdrop-blur"
+          className="absolute left-1/2 top-2 hidden -translate-x-1/2 rounded-md border border-white/10 bg-black/40 px-1.5 py-0.5 text-[10px] num font-semibold backdrop-blur sm:block"
           style={{ color: side.color, textShadow: `0 0 8px ${side.glow}` }}
         >
           {animated.toFixed(0)}%
         </div>
       </div>
       <div
-        className="mt-2 text-[10px] font-semibold uppercase tracking-[0.22em]"
+        className="mt-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] sm:mt-2 sm:text-[10px] sm:tracking-[0.22em]"
         style={{ color: side.color, textShadow: `0 0 10px ${side.glow}` }}
       >
         {side.label}
