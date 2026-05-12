@@ -12,10 +12,9 @@ import { AIMomentumStrip } from "./AIMomentumStrip";
 import { TradeInputs, type TradeConfig } from "./TradeInputs";
 import { ActionButtons } from "./ActionButtons";
 import { ManualHistoryTable } from "./ManualHistoryTable";
-import { EvenOddDial } from "./meters/EvenOddDial";
 import { OverUnderHistogram } from "./meters/OverUnderHistogram";
 import { DigitFrequencyMatrix } from "./meters/DigitFrequencyMatrix";
-import { RiseFallPressure } from "./meters/RiseFallPressure";
+import { MarketThermometer } from "./meters/MarketThermometer";
 import { useTicks } from "@/hooks/use-ticks";
 import { analyze } from "@/lib/ai-analysis";
 
@@ -39,11 +38,11 @@ const STRATEGY: Record<StrategyId, {
 };
 
 function Meter({ id, symbol, digit }: { id: StrategyId; symbol: string; digit: number }) {
-  if (id === "even-odd") return <EvenOddDial symbol={symbol} />;
+  if (id === "even-odd") return <MarketThermometer mode="even-odd" symbol={symbol} />;
   if (id === "over-under") return <OverUnderHistogram symbol={symbol} barrier={digit} />;
   if (id === "matches-differs") return <DigitFrequencyMatrix symbol={symbol} target={digit} />;
   if (id === "under-digit") return <DigitFrequencyMatrix symbol={symbol} target={digit} />;
-  return <RiseFallPressure symbol={symbol} />;
+  return <MarketThermometer mode="rise-fall" symbol={symbol} />;
 }
 
 export function StrategyPage({ id }: { id: StrategyId }) {
