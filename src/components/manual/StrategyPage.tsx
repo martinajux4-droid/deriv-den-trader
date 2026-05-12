@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Cpu, Activity, Gauge } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useDeriv } from "@/hooks/use-deriv";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,8 +16,10 @@ import { EvenOddDial } from "./meters/EvenOddDial";
 import { OverUnderHistogram } from "./meters/OverUnderHistogram";
 import { DigitFrequencyMatrix } from "./meters/DigitFrequencyMatrix";
 import { RiseFallPressure } from "./meters/RiseFallPressure";
+import { useTicks } from "@/hooks/use-ticks";
+import { analyze } from "@/lib/ai-analysis";
 
-export type StrategyId = "even-odd" | "over-under" | "matches-differs" | "rise-fall";
+export type StrategyId = "even-odd" | "over-under" | "matches-differs" | "rise-fall" | "under-digit";
 
 const STRATEGY: Record<StrategyId, {
   title: string; subtitle: string;
@@ -33,12 +35,14 @@ const STRATEGY: Record<StrategyId, {
   "over-under":       { title: "Over / Under",      subtitle: "Digit threshold prediction", contracts: ["DIGITOVER", "DIGITUNDER"], labels: ["OVER", "UNDER"],     needsBarrier: true,  showDigit: true,  accent: "var(--meter-momentum)", accentBg: "oklch(0.82 0.16 200 / 0.16)", accentLabel: "Threshold AI" },
   "matches-differs":  { title: "Matches / Differs", subtitle: "Digit pattern recognition",  contracts: ["DIGITMATCH", "DIGITDIFF"], labels: ["MATCHES", "DIFFERS"], needsBarrier: true,  showDigit: true,  accent: "var(--meter-ai)",       accentBg: "oklch(0.86 0.14 90 / 0.16)",  accentLabel: "Pattern AI" },
   "rise-fall":        { title: "Rise / Fall",       subtitle: "Directional momentum trades", contracts: ["CALL", "PUT"], labels: ["RISE", "FALL"],                 needsBarrier: false, showDigit: false, accent: "var(--meter-bear)",     accentBg: "oklch(0.65 0.22 25 / 0.14)",  accentLabel: "Momentum AI" },
+  "under-digit":      { title: "Under / Digit",     subtitle: "Smart digit prediction matrix", contracts: ["DIGITUNDER", "DIGITOVER"], labels: ["UNDER", "OVER"],     needsBarrier: true,  showDigit: true,  accent: "oklch(0.78 0.16 320)",  accentBg: "oklch(0.78 0.16 320 / 0.16)", accentLabel: "Predictive AI" },
 };
 
 function Meter({ id, symbol, digit }: { id: StrategyId; symbol: string; digit: number }) {
   if (id === "even-odd") return <EvenOddDial symbol={symbol} />;
   if (id === "over-under") return <OverUnderHistogram symbol={symbol} barrier={digit} />;
   if (id === "matches-differs") return <DigitFrequencyMatrix symbol={symbol} target={digit} />;
+  if (id === "under-digit") return <DigitFrequencyMatrix symbol={symbol} target={digit} />;
   return <RiseFallPressure symbol={symbol} />;
 }
 
