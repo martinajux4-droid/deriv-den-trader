@@ -32,6 +32,7 @@ export type StrategyConfig = {
   take_profit?: number;
   stop_loss?: number;
   daily_target?: number;
+  daily_loss_limit?: number;
   max_drawdown?: number;
   max_trades?: number;
   max_consecutive_losses?: number;
@@ -208,6 +209,7 @@ export class BotRunner {
     if (c.daily_target !== undefined && this.pnl >= c.daily_target) return `Daily target +${this.pnl.toFixed(2)}`;
     if (c.stop_loss !== undefined && this.pnl <= -c.stop_loss) return `Stop-loss ${this.pnl.toFixed(2)}`;
     if (c.max_drawdown !== undefined && this.pnl <= -c.max_drawdown) return `Max drawdown ${this.pnl.toFixed(2)}`;
+    if (c.daily_loss_limit !== undefined && this.pnl <= -c.daily_loss_limit) return `Daily loss limit ${this.pnl.toFixed(2)}`;
     return null;
   }
 
