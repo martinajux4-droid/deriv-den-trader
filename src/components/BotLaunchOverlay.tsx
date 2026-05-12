@@ -3,12 +3,13 @@ import { createPortal } from "react-dom";
 import { Brain, Activity, Radar, Sparkles } from "lucide-react";
 
 const STEPS = [
+  "Validating risk management…",
+  "Checking market volatility…",
   "Establishing secure AI link…",
-  "Scanning market conditions…",
+  "Scanning for safe entries…",
   "Analyzing momentum flow…",
-  "Detecting institutional pressure…",
-  "Searching for high probability setup…",
-  "Signal confidence increasing…",
+  "AI protection systems active…",
+  "Trading engine online…",
   "AI engine online · ready to trade",
 ];
 
