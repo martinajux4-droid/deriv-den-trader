@@ -227,22 +227,24 @@ export function StrategyPage({ id }: { id: StrategyId }) {
           <Meter id={id} symbol={symbol} digit={cfg.digit} />
         </div>
 
-        {/* Inputs + actions */}
+        {/* Inputs + actions — Premium AI Risk Control Panel */}
         <div className="space-y-3">
-          <div className="glass-card p-4">
+          <div className="risk-panel p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">AI Risk Control</div>
+              <span className={`flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium ${running ? "border-bull/40 bg-bull/10 text-bull" : "border-white/10 bg-white/[0.02] text-muted-foreground"}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${running ? "bg-bull animate-pulse" : "bg-muted-foreground"}`} />
+                {running ? "Live trading" : "Standby"}
+              </span>
+            </div>
             <div className="mb-3 grid grid-cols-2 gap-2 rounded-xl border border-white/10 bg-white/[0.02] p-1">
               {meta.labels.map((lbl, i) => {
                 const isActive = direction === i;
+                const flavor = i === 0 ? "risk-tab-water" : "risk-tab-fire";
                 return (
                   <button key={lbl} onClick={() => setDirection(i as 0 | 1)}
-                          className={`rounded-lg py-2 text-xs font-semibold uppercase tracking-[0.18em] transition-all ${
-                            isActive
-                              ? i === 0
-                                ? "bg-[var(--meter-bull)]/15 text-[var(--meter-bull)] shadow-[inset_0_0_0_1px_var(--meter-bull)]"
-                                : "bg-[var(--meter-bear)]/15 text-[var(--meter-bear)] shadow-[inset_0_0_0_1px_var(--meter-bear)]"
-                              : "text-muted-foreground hover:text-foreground"
-                          }`}>
-                    {lbl}
+                          className={`risk-tab py-2 text-xs font-semibold uppercase tracking-[0.18em] ${isActive ? flavor : "risk-tab-idle"}`}>
+                    <span className="relative z-[2]">{lbl}</span>
                   </button>
                 );
               })}
@@ -250,9 +252,9 @@ export function StrategyPage({ id }: { id: StrategyId }) {
 
             <TradeInputs cfg={cfg} setCfg={setCfg} showDigit={meta.showDigit} />
 
-            <div className="mt-3 flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2 text-xs">
-              <span className="text-muted-foreground">Session P&amp;L</span>
-              <span className={`num font-semibold ${sessionPnl >= 0 ? "text-bull" : "text-bear"}`}>{sessionPnl >= 0 ? "+" : ""}{sessionPnl.toFixed(2)}</span>
+            <div className={`risk-pnl mt-3 flex items-center justify-between px-3 py-2 text-xs ${sessionPnl >= 0 ? "risk-pnl-bull" : "risk-pnl-bear"}`}>
+              <span className="relative z-[1] text-muted-foreground uppercase tracking-[0.16em] text-[10px]">Session P&amp;L</span>
+              <span className={`relative z-[1] num font-semibold text-base ${sessionPnl >= 0 ? "text-bull" : "text-bear"}`}>{sessionPnl >= 0 ? "+" : ""}{sessionPnl.toFixed(2)}</span>
             </div>
 
             <div className="mt-3">
