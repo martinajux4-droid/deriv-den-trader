@@ -38,12 +38,18 @@ const STRATEGY: Record<StrategyId, {
   "under-digit":      { title: "Under / Digit",     subtitle: "Smart digit prediction matrix", contracts: ["DIGITUNDER", "DIGITOVER"], labels: ["UNDER", "OVER"],     needsBarrier: true,  showDigit: true,  accent: "oklch(0.78 0.16 320)",  accentBg: "oklch(0.78 0.16 320 / 0.16)", accentLabel: "Predictive AI" },
 };
 
-function Meter({ id, symbol, digit }: { id: StrategyId; symbol: string; digit: number }) {
+function Meter({ id, symbol, digit, trading }: {
+  id: StrategyId; symbol: string; digit: number;
+  trading?: {
+    running: boolean; paused: boolean; busy: boolean;
+    onStart: () => void; onPause: () => void; onStop: () => void; onTradeNow: () => void;
+  };
+}) {
   if (id === "even-odd") return <EvenOddBoard symbol={symbol} />;
   if (id === "over-under") return <OverUnderHistogram symbol={symbol} barrier={digit} />;
   if (id === "matches-differs") return <DigitFrequencyMatrix symbol={symbol} target={digit} />;
   if (id === "under-digit") return <DigitFrequencyMatrix symbol={symbol} target={digit} />;
-  return <MarketThermometer mode="rise-fall" symbol={symbol} />;
+  return <MarketThermometer mode="rise-fall" symbol={symbol} {...(trading || {})} />;
 }
 
 export function StrategyPage({ id }: { id: StrategyId }) {
@@ -66,7 +72,9 @@ export function StrategyPage({ id }: { id: StrategyId }) {
 
   const [running, setRunning] = useState(false);
   const [safeMode, setSafeMode] = useState(false);
+  const [paused, setPaused] = useState(false);
   const runningRef = useRef(false);
+  const pausedRef = useRef(false);
   const sessionPnlRef = useRef(0);
   const stakeRef = useRef(cfg.stake);
   const [sessionPnl, setSessionPnl] = useState(0);
@@ -130,6 +138,11 @@ export function StrategyPage({ id }: { id: StrategyId }) {
     stakeRef.current = cfg.stake;
 
     while (runningRef.current) {
+      // honor pause
+      while (pausedRef.current && runningRef.current) {
+        await new Promise((r) => setTimeout(r, 300));
+      }
+      if (!runningRef.current) break;
       const profit = await placeOnce(true);
       if (profit == null) break;
       sessionPnlRef.current += profit;
@@ -152,7 +165,9 @@ export function StrategyPage({ id }: { id: StrategyId }) {
     }
     runningRef.current = false; setRunning(false);
   };
-  const stopLoop = () => { runningRef.current = false; setRunning(false); };
+  const stopLoop = () => { runningRef.current = false; pausedRef.current = false; setPaused(false); setRunning(false); };
+  const pauseLoop = () => { pausedRef.current = true; setPaused(true); };
+  const resumeLoop = () => { pausedRef.current = false; setPaused(false); };
   useEffect(() => () => { runningRef.current = false; }, []);
 
   const headerAccent = useMemo(() => ({ background: meta.accentBg, color: meta.accent }), [meta]);
@@ -225,7 +240,18 @@ export function StrategyPage({ id }: { id: StrategyId }) {
               <span className="num">{symbol}</span>
             </div>
           </div>
-          <Meter id={id} symbol={symbol} digit={cfg.digit} />
+          <Meter
+            id={id}
+            symbol={symbol}
+            digit={cfg.digit}
+            trading={{
+              running, paused, busy,
+              onStart: () => (paused ? resumeLoop() : startLoop()),
+              onPause: pauseLoop,
+              onStop: stopLoop,
+              onTradeNow: () => placeOnce(false),
+            }}
+          />
         </div>
 
         {/* Inputs + actions — Premium AI Risk Control Panel */}
