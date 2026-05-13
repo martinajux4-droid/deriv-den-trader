@@ -22,6 +22,9 @@ export function EvenOddBoard({ symbol }: { symbol: string }) {
 
   const digits = useMemo(() => ticks.map((t) => lastDigit(t.quote)), [ticks]);
   const latest = ticks.length ? ticks[ticks.length - 1].quote : 0;
+  const prevPrice = ticks.length > 1 ? ticks[ticks.length - 2].quote : latest;
+  const priceUp = latest >= prevPrice;
+  const animatedPrice = useAnimatedNumber(latest, 320);
   const last = digits[digits.length - 1] ?? 0;
 
   const total = digits.length || 1;
@@ -124,11 +127,31 @@ export function EvenOddBoard({ symbol }: { symbol: string }) {
       </div>
 
       {/* Latest price */}
-      <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2">
-        <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Latest Price</span>
-        <span key={latest} className="num text-base font-semibold tabular-nums" style={{ color: COLORS.ai, textShadow: `0 0 10px ${COLORS.ai}55` }}>
-          {latest ? latest.toFixed(3) : "--"}
-        </span>
+      <div className="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-white/[0.04] to-black/40 px-3 py-2.5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inset-0 animate-ping rounded-full bg-bull opacity-70" />
+              <span className="relative h-2 w-2 rounded-full bg-bull" />
+            </span>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Live Price</span>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span
+              key={lastEpoch}
+              className="num text-xl font-bold tabular-nums transition-colors duration-200"
+              style={{
+                color: priceUp ? "var(--meter-bull)" : "var(--meter-bear)",
+                textShadow: `0 0 14px ${priceUp ? "oklch(0.74 0.18 150 / 0.55)" : "oklch(0.65 0.22 25 / 0.55)"}`,
+              }}
+            >
+              {animatedPrice ? animatedPrice.toFixed(3) : "--"}
+            </span>
+            <span className={cn("text-[10px] font-semibold num", priceUp ? "text-bull" : "text-bear")}>
+              {priceUp ? "▲" : "▼"}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Dual percentage bars */}
