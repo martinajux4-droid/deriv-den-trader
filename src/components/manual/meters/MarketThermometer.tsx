@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTicks } from "@/hooks/use-ticks";
 import { analyze } from "@/lib/ai-analysis";
 import { useAnimatedNumber } from "@/hooks/use-animated-number";
+import { Play, Pause, Square, Zap } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type Mode = "even-odd" | "rise-fall";
 
@@ -103,7 +105,15 @@ function useLiveFlow(symbol: string, mode: Mode) {
   return { left, right, lastDigit, pulse, intensity, accel: accelRef.current, analysis: a };
 }
 
-export function MarketThermometer({ mode, symbol }: { mode: Mode; symbol: string }) {
+export function MarketThermometer({
+  mode, symbol,
+  running, paused, busy,
+  onStart, onPause, onStop, onTradeNow,
+}: {
+  mode: Mode; symbol: string;
+  running?: boolean; paused?: boolean; busy?: boolean;
+  onStart?: () => void; onPause?: () => void; onStop?: () => void; onTradeNow?: () => void;
+}) {
   const flow = useLiveFlow(symbol, mode);
   const { left: leftVal, right: rightVal, lastDigit, pulse, intensity, accel, analysis: a } = flow;
 
@@ -305,6 +315,87 @@ export function MarketThermometer({ mode, symbol }: { mode: Mode; symbol: string
           </div>
         </div>
       </div>
+
+      {/* Inline trading dock — phone-friendly */}
+      {(onStart || onStop || onTradeNow) && (
+        <div className="relative mt-3 rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.04] to-black/50 p-2 backdrop-blur sm:mt-4">
+          <div className="mb-1.5 flex items-center justify-between px-1">
+            <span className="text-[9px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Quick Trade</span>
+            <span className={cn(
+              "flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider",
+              running && !paused
+                ? "border-bull/40 bg-bull/10 text-bull"
+                : paused
+                  ? "border-warning/40 bg-warning/10 text-warning"
+                  : "border-white/10 bg-white/[0.02] text-muted-foreground",
+            )}>
+              <span className={cn(
+                "h-1.5 w-1.5 rounded-full",
+                running && !paused ? "bg-bull animate-pulse" : paused ? "bg-warning" : "bg-muted-foreground",
+              )} />
+              {running && !paused ? "Live" : paused ? "Paused" : "Idle"}
+            </span>
+          </div>
+          <div className="grid grid-cols-4 gap-1.5">
+            {onStart && (
+              <button
+                onClick={onStart}
+                disabled={busy || (running && !paused)}
+                className={cn(
+                  "group flex h-11 flex-col items-center justify-center gap-0.5 rounded-xl border text-[10px] font-semibold uppercase tracking-wider transition-all active:scale-95 disabled:opacity-40",
+                  running && !paused
+                    ? "border-bull/40 bg-bull/15 text-bull"
+                    : "border-white/10 bg-white/[0.02] text-foreground hover:border-bull/40 hover:bg-bull/10 hover:text-bull",
+                )}
+              >
+                <Play className="h-3.5 w-3.5" fill="currentColor" />
+                <span>{paused ? "Resume" : "Start"}</span>
+              </button>
+            )}
+            {onPause && (
+              <button
+                onClick={onPause}
+                disabled={!running || busy}
+                className={cn(
+                  "flex h-11 flex-col items-center justify-center gap-0.5 rounded-xl border text-[10px] font-semibold uppercase tracking-wider transition-all active:scale-95 disabled:opacity-40",
+                  paused
+                    ? "border-warning/40 bg-warning/15 text-warning"
+                    : "border-white/10 bg-white/[0.02] text-foreground hover:border-warning/40 hover:bg-warning/10 hover:text-warning",
+                )}
+              >
+                <Pause className="h-3.5 w-3.5" fill="currentColor" />
+                <span>Pause</span>
+              </button>
+            )}
+            {onStop && (
+              <button
+                onClick={onStop}
+                disabled={!running}
+                className={cn(
+                  "flex h-11 flex-col items-center justify-center gap-0.5 rounded-xl border text-[10px] font-semibold uppercase tracking-wider transition-all active:scale-95 disabled:opacity-40",
+                  "border-white/10 bg-white/[0.02] text-foreground hover:border-bear/40 hover:bg-bear/10 hover:text-bear",
+                )}
+              >
+                <Square className="h-3.5 w-3.5" fill="currentColor" />
+                <span>Stop</span>
+              </button>
+            )}
+            {onTradeNow && (
+              <button
+                onClick={onTradeNow}
+                disabled={busy || running}
+                className={cn(
+                  "flex h-11 flex-col items-center justify-center gap-0.5 rounded-xl border text-[10px] font-semibold uppercase tracking-wider transition-all active:scale-95 disabled:opacity-40",
+                  "border-[var(--meter-momentum)]/40 bg-[var(--meter-momentum)]/10 text-[var(--meter-momentum)] hover:bg-[var(--meter-momentum)]/20",
+                )}
+              >
+                <Zap className="h-3.5 w-3.5" fill="currentColor" />
+                <span>{busy ? "…" : "Trade"}</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
