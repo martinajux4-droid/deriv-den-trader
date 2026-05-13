@@ -259,7 +259,9 @@ export function StrategyPage({ id }: { id: StrategyId }) {
 
             <div className="mt-3">
               <ActionButtons running={running} safeMode={safeMode} disabled={busy && !running}
-                             onStart={startLoop} onStop={stopLoop} onSafe={() => setSafeMode((s) => !s)} />
+                             tradeBusy={busy}
+                             onStart={startLoop} onStop={stopLoop} onSafe={() => setSafeMode((s) => !s)}
+                             onTradeNow={() => placeOnce(false)} />
             </div>
             {!active && <p className="mt-2 text-[11px] text-bear">Connect a Deriv account in Settings to trade.</p>}
           </div>
