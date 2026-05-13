@@ -15,6 +15,7 @@ import { ManualHistoryTable } from "./ManualHistoryTable";
 import { OverUnderHistogram } from "./meters/OverUnderHistogram";
 import { DigitFrequencyMatrix } from "./meters/DigitFrequencyMatrix";
 import { MarketThermometer } from "./meters/MarketThermometer";
+import { EvenOddBoard } from "./meters/EvenOddBoard";
 import { useTicks } from "@/hooks/use-ticks";
 import { analyze } from "@/lib/ai-analysis";
 
@@ -38,7 +39,7 @@ const STRATEGY: Record<StrategyId, {
 };
 
 function Meter({ id, symbol, digit }: { id: StrategyId; symbol: string; digit: number }) {
-  if (id === "even-odd") return <MarketThermometer mode="even-odd" symbol={symbol} />;
+  if (id === "even-odd") return <EvenOddBoard symbol={symbol} />;
   if (id === "over-under") return <OverUnderHistogram symbol={symbol} barrier={digit} />;
   if (id === "matches-differs") return <DigitFrequencyMatrix symbol={symbol} target={digit} />;
   if (id === "under-digit") return <DigitFrequencyMatrix symbol={symbol} target={digit} />;
