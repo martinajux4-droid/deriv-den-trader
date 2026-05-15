@@ -19,7 +19,8 @@ import { DigitFrequencyMatrix } from "./meters/DigitFrequencyMatrix";
 import { MarketThermometer } from "./meters/MarketThermometer";
 import { EvenOddBoard } from "./meters/EvenOddBoard";
 import { useTicks } from "@/hooks/use-ticks";
-import { analyze } from "@/lib/ai-analysis";
+import { analyze, digitStats } from "@/lib/ai-analysis";
+import { AIAnalysisPanel, type AiPhase } from "./AIAnalysisPanel";
 
 export type StrategyId = "even-odd" | "over-under" | "matches-differs" | "rise-fall" | "under-digit";
 
@@ -85,6 +86,80 @@ export function StrategyPage({ id }: { id: StrategyId }) {
   const [liveTrade, setLiveTrade] = useState<LiveTrade | null>(null);
   const [settlement, setSettlement] = useState<SettlementResult>(null);
   const aiEnabledRef = useRef(true);
+
+  // ===== AI gating state (used for even-odd) =====
+  const [aiPhase, setAiPhase] = useState<AiPhase>("idle");
+  const [lastResult, setLastResult] = useState<"win" | "loss" | "even" | null>(null);
+  const consecLossesRef = useRef(0);
+  const tickQuotesRef = useRef<number[]>([]);
+  const pageTicks = useTicks(symbol, 80);
+  useEffect(() => { tickQuotesRef.current = pageTicks.map((t) => t.quote); }, [pageTicks]);
+
+  // Live AI panel data
+  const aiAnalysis = useMemo(() => analyze(pageTicks.map((t) => t.quote)), [pageTicks]);
+  const aiDigits = useMemo(() => digitStats(pageTicks.map((t) => t.quote)), [pageTicks]);
+  const aiStreak = useMemo(() => {
+    const quotes = pageTicks.map((t) => t.quote);
+    if (!quotes.length) return { kind: "—" as const, len: 0 };
+    const digits = quotes.map((q) => Number(String(q.toFixed(5)).replace(".", "").slice(-1)));
+    const lastKind: "EVEN" | "ODD" = digits[digits.length - 1] % 2 === 0 ? "EVEN" : "ODD";
+    let len = 0;
+    for (let i = digits.length - 1; i >= 0; i--) {
+      const k = digits[i] % 2 === 0 ? "EVEN" : "ODD";
+      if (k === lastKind) len++; else break;
+    }
+    return { kind: lastKind, len };
+  }, [pageTicks]);
+  const aiDecision: "EVEN" | "ODD" | "WAIT" = useMemo(() => {
+    if (id !== "even-odd") return "WAIT";
+    const want: "EVEN" | "ODD" = direction === 0 ? "EVEN" : "ODD";
+    const wantPct = want === "EVEN" ? aiDigits.even : aiDigits.odd;
+    const conf = aiAnalysis?.confidence ?? 0;
+    const vol = aiAnalysis?.volatility ?? 0;
+    const ok = wantPct >= 56 && conf >= 65 && vol < 85 && !(aiStreak.kind === want && aiStreak.len >= 5);
+    return ok ? want : "WAIT";
+  }, [id, direction, aiDigits, aiAnalysis, aiStreak]);
+
+  // Wait until AI confirms (or running stops)
+  const awaitConfirmation = async (): Promise<boolean> => {
+    setAiPhase("analyzing");
+    await new Promise((r) => setTimeout(r, 600));
+    if (!runningRef.current) return false;
+    setAiPhase("scanning");
+    await new Promise((r) => setTimeout(r, 600));
+    if (!runningRef.current) return false;
+    setAiPhase("waiting");
+    const want: "EVEN" | "ODD" = direction === 0 ? "EVEN" : "ODD";
+    const start = Date.now();
+    while (runningRef.current && Date.now() - start < 30_000) {
+      while (pausedRef.current && runningRef.current) await new Promise((r) => setTimeout(r, 250));
+      if (!runningRef.current) return false;
+      const quotes = tickQuotesRef.current;
+      if (quotes.length >= 20) {
+        const ds = digitStats(quotes);
+        const a = analyze(quotes);
+        const wantPct = want === "EVEN" ? ds.even : ds.odd;
+        const conf = a?.confidence ?? 0;
+        const vol = a?.volatility ?? 0;
+        // streak guard
+        const digits = quotes.map((q) => Number(String(q.toFixed(5)).replace(".", "").slice(-1)));
+        const lastKind = digits[digits.length - 1] % 2 === 0 ? "EVEN" : "ODD";
+        let len = 0;
+        for (let i = digits.length - 1; i >= 0; i--) {
+          const k = digits[i] % 2 === 0 ? "EVEN" : "ODD";
+          if (k === lastKind) len++; else break;
+        }
+        const streakBlock = lastKind === want && len >= 5;
+        if (wantPct >= 56 && conf >= 65 && vol < 85 && !streakBlock) {
+          setAiPhase("ready");
+          await new Promise((r) => setTimeout(r, 250));
+          return true;
+        }
+      }
+      await new Promise((r) => setTimeout(r, 400));
+    }
+    return runningRef.current;
+  };
 
   const placeOnce = async (auto = false): Promise<number | null> => {
     if (!client || !active || !user) { toast.error("Connect a Deriv account first"); return null; }
@@ -182,6 +257,9 @@ export function StrategyPage({ id }: { id: StrategyId }) {
     runningRef.current = true; setRunning(true);
     sessionPnlRef.current = 0; setSessionPnl(0);
     stakeRef.current = cfg.stake;
+    consecLossesRef.current = 0;
+    setLastResult(null);
+    setAiPhase(useAi && id === "even-odd" ? "analyzing" : "idle");
 
     while (runningRef.current) {
       // honor pause
@@ -189,10 +267,19 @@ export function StrategyPage({ id }: { id: StrategyId }) {
         await new Promise((r) => setTimeout(r, 300));
       }
       if (!runningRef.current) break;
+
+      // AI gating for even-odd
+      if (useAi && id === "even-odd") {
+        const ok = await awaitConfirmation();
+        if (!ok || !runningRef.current) break;
+      }
+      setAiPhase("executing");
       const profit = await placeOnce(true);
       if (profit == null) break;
       sessionPnlRef.current += profit;
       setSessionPnl(sessionPnlRef.current);
+      setLastResult(profit > 0 ? "win" : profit < 0 ? "loss" : "even");
+      if (profit < 0) consecLossesRef.current += 1; else consecLossesRef.current = 0;
 
       if (cfg.takeProfit > 0 && sessionPnlRef.current >= cfg.takeProfit) {
         toast.success(`Take profit hit: +${sessionPnlRef.current.toFixed(2)}`); break;
@@ -206,12 +293,22 @@ export function StrategyPage({ id }: { id: StrategyId }) {
       } else {
         stakeRef.current = cfg.stake;
       }
+      // cooldown after consecutive losses
+      if (useAi && consecLossesRef.current >= 3) {
+        setAiPhase("cooldown");
+        const start = Date.now();
+        while (runningRef.current && Date.now() - start < 8000) {
+          await new Promise((r) => setTimeout(r, 300));
+        }
+        consecLossesRef.current = 0;
+      }
       // safe-mode or non-AI pause between trades
       if (safeMode || !aiEnabledRef.current) await new Promise((r) => setTimeout(r, 1500));
     }
     runningRef.current = false; setRunning(false);
+    setAiPhase("idle");
   };
-  const stopLoop = () => { runningRef.current = false; pausedRef.current = false; setPaused(false); setRunning(false); };
+  const stopLoop = () => { runningRef.current = false; pausedRef.current = false; setPaused(false); setRunning(false); setAiPhase("idle"); };
   const pauseLoop = () => { pausedRef.current = true; setPaused(true); };
   const resumeLoop = () => { pausedRef.current = false; setPaused(false); };
   useEffect(() => () => { runningRef.current = false; }, []);
@@ -349,6 +446,18 @@ export function StrategyPage({ id }: { id: StrategyId }) {
       </div>
 
       {/* AI momentum + history */}
+      {id === "even-odd" && (
+        <AIAnalysisPanel
+          phase={aiPhase}
+          analysis={aiAnalysis}
+          evenPct={aiDigits.even}
+          oddPct={aiDigits.odd}
+          lastDigit={aiDigits.lastDigit}
+          streak={aiStreak}
+          decision={aiDecision}
+          lastResult={lastResult}
+        />
+      )}
       <AIMomentumStrip symbol={symbol} />
       <ManualHistoryTable contractTypes={meta.contracts} />
       <SettlementPopup result={settlement} onClose={() => setSettlement(null)} />
