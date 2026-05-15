@@ -65,7 +65,7 @@ export function StrategyPage({ id }: { id: StrategyId }) {
     if (typeof window !== "undefined") {
       try { const raw = localStorage.getItem(cfgKey); if (raw) return JSON.parse(raw); } catch {}
     }
-    return { stake: 1, takeProfit: 10, maxLoss: 5, martingale: 2, ticks: 5, duration: 5, durationUnit: "t", digit: 5, riskMultiplier: 1 };
+    return { stake: 1, takeProfit: 10, maxLoss: 5, stopLoss: 0, martingale: 2, ticks: 5, duration: 5, durationUnit: "t", digit: 5, riskMultiplier: 1, stakeList: "" };
   });
   useEffect(() => { try { localStorage.setItem(cfgKey, JSON.stringify(cfg)); } catch {} }, [cfg, cfgKey]);
 
