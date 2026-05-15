@@ -461,9 +461,37 @@ export function EvenOddPage() {
 
       {/* TRADE HISTORY — mobile: scrollable cards, desktop: full table */}
       <div className="rounded-2xl border border-white/10 bg-black/60 p-2 backdrop-blur lg:p-4">
-        <div className="mb-1 flex items-center justify-between px-1 text-[9px] uppercase tracking-[0.2em] text-muted-foreground lg:text-[11px]">
+        <div className="mb-2 flex items-center justify-between px-1 text-[9px] uppercase tracking-[0.2em] text-muted-foreground lg:text-[11px]">
           <span>Recent Trades</span>
-          <span>Last 8</span>
+          <div className="flex items-center gap-2">
+            <span>Last 8</span>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button
+                  className="group flex items-center gap-1 rounded-full border border-[oklch(0.7_0.18_25/0.4)] bg-[oklch(0.7_0.18_25/0.08)] px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-[oklch(0.78_0.18_25)] transition hover:bg-[oklch(0.7_0.18_25/0.18)] hover:scale-[1.03] disabled:opacity-50"
+                  disabled={history.length === 0}
+                  style={{ boxShadow: `0 0 10px -4px ${RED}` }}
+                >
+                  <Trash2 className="h-3 w-3" />
+                  <span>Clear</span>
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete all trade history?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This permanently removes all Even/Odd trades and resets your session P&amp;L and stats. This cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={clearHistory} className="bg-[oklch(0.7_0.18_25)] hover:bg-[oklch(0.65_0.2_25)]">
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
 
         {/* MOBILE: horizontal scrollable cards */}
