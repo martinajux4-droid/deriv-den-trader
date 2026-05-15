@@ -579,13 +579,14 @@ function Thermometer({
   confidence: number; sample: number; tick: number;
   digits: number[]; priceUp: boolean;
 }) {
-  const pos = Math.max(0, Math.min(100, 50 + pressure / 2));
-  const momPos = Math.max(0, Math.min(100, 50 + momentum / 2));
   const intensity = Math.min(1, edge / 30);
   const sideColor = dominant === "EVEN" ? GREEN : RED;
-  const glow = `0 0 ${12 + intensity * 36}px ${sideColor}`;
   const trendLabel = pressure > 5 ? "BULLISH" : pressure < -5 ? "BEARISH" : "NEUTRAL";
   const trendColor = pressure > 5 ? GREEN : pressure < -5 ? RED : "oklch(0.75 0 0)";
+  const evenLevel = Math.max(4, Math.min(98, evenPct));
+  const oddLevel  = Math.max(4, Math.min(98, oddPct));
+  const evenIntensity = Math.min(1, Math.max(0, (evenPct - 50) / 25));
+  const oddIntensity  = Math.min(1, Math.max(0, (oddPct  - 50) / 25));
 
   // mini market line — last 40 digits as parity wave
   const wave = digits.slice(-40);
@@ -593,165 +594,176 @@ function Thermometer({
   const points = wave
     .map((d, i) => {
       const x = (i / Math.max(1, waveMax - 1)) * 100;
-      const y = d % 2 === 0 ? 30 : 70;
+      const y = d % 2 === 0 ? 28 : 72;
       return `${x.toFixed(2)},${y}`;
     })
     .join(" ");
 
-  // animated flowing particles — count scales with intensity
-  const particles = useMemo(
-    () => Array.from({ length: 8 }).map((_, i) => ({
+  // bubbles for each bottle
+  const bubblesEven = useMemo(
+    () => Array.from({ length: 7 }).map((_, i) => ({
       id: i,
-      delay: (i * 0.45).toFixed(2),
-      duration: (3.6 + (i % 3) * 0.7).toFixed(2),
-      top: 30 + ((i * 13) % 40),
+      left: 12 + ((i * 37) % 70),
+      size: 3 + (i % 3),
+      delay: (i * 0.55).toFixed(2),
+      duration: (3.4 + (i % 4) * 0.7).toFixed(2),
+    })),
+    [],
+  );
+  const bubblesOdd = useMemo(
+    () => Array.from({ length: 7 }).map((_, i) => ({
+      id: i,
+      left: 18 + ((i * 29) % 64),
+      size: 3 + ((i + 1) % 3),
+      delay: (i * 0.6 + 0.3).toFixed(2),
+      duration: (3.2 + ((i + 1) % 4) * 0.7).toFixed(2),
     })),
     [],
   );
 
   return (
     <div
-      className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-black/80 via-black/70 to-black/60 p-3 backdrop-blur lg:p-4"
+      className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-black/85 via-black/75 to-black/65 p-3 backdrop-blur lg:p-4"
       style={{
-        boxShadow: `inset 0 0 0 1px ${sideColor}22, 0 0 ${18 + intensity * 30}px -10px ${sideColor}`,
+        boxShadow: `inset 0 0 0 1px ${sideColor}22, 0 0 ${18 + intensity * 32}px -10px ${sideColor}`,
       }}
     >
-      {/* ambient halo follows the dominant side */}
+      {/* ambient side halo */}
       <div
         className="pointer-events-none absolute inset-0 transition-opacity duration-500"
         style={{
           background:
             pressure >= 0
-              ? `radial-gradient(60% 100% at 100% 50%, ${GREEN}22, transparent 70%)`
-              : `radial-gradient(60% 100% at 0% 50%, ${RED}22, transparent 70%)`,
-          opacity: 0.6 + intensity * 0.4,
+              ? `radial-gradient(55% 80% at 85% 50%, ${GREEN}22, transparent 70%)`
+              : `radial-gradient(55% 80% at 15% 50%, ${RED}22, transparent 70%)`,
+          opacity: 0.5 + intensity * 0.5,
         }}
       />
 
+      {/* header */}
       <div className="relative mb-2 flex items-center justify-between text-[9px] uppercase tracking-[0.18em] text-muted-foreground lg:text-[10px]">
         <span className="flex items-center gap-1.5">
           <span className="relative flex h-1.5 w-1.5">
             <span className="absolute inset-0 animate-ping rounded-full" style={{ background: sideColor, opacity: 0.7 }} />
             <span className="relative h-1.5 w-1.5 rounded-full" style={{ background: sideColor }} />
           </span>
-          Live Market Pressure
+          Live Market Pressure Engine
         </span>
         <span>n=<span className="num text-foreground">{sample}</span></span>
       </div>
 
-      {/* polarity labels */}
-      <div className="relative mb-1.5 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider lg:text-xs">
-        <span style={{ color: RED, textShadow: `0 0 10px ${RED}99` }}>◀ ODD</span>
-        <span className="text-muted-foreground/80">{trendLabel}</span>
-        <span style={{ color: GREEN, textShadow: `0 0 10px ${GREEN}99` }}>EVEN ▶</span>
-      </div>
+      {/* MAIN: bottle | engine | bottle */}
+      <div className="relative grid grid-cols-[1fr_minmax(96px,1.4fr)_1fr] gap-2 sm:gap-3 lg:gap-5">
+        <Bottle
+          side="EVEN"
+          color={GREEN}
+          level={evenLevel}
+          pct={evenPct}
+          dominant={dominant === "EVEN"}
+          intensity={evenIntensity}
+          bubbles={bubblesEven}
+          tick={tick}
+        />
 
-      {/* the pressure bar */}
-      <div
-        className="relative h-7 w-full overflow-hidden rounded-full border border-white/10 lg:h-9"
-        style={{
-          background:
-            "linear-gradient(90deg, oklch(0.4 0.16 25 / 0.45), oklch(0.16 0.02 240 / 0.55) 50%, oklch(0.4 0.18 145 / 0.45))",
-          boxShadow: "inset 0 1px 0 oklch(1 0 0 / 0.06), inset 0 0 18px oklch(0 0 0 / 0.6)",
-        }}
-      >
-        {/* mini market flow line (SVG parity wave) */}
-        <svg className="absolute inset-0 h-full w-full opacity-50" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <defs>
-            <linearGradient id="flowGrad" x1="0" x2="1" y1="0" y2="0">
-              <stop offset="0%" stopColor={RED} stopOpacity="0.8" />
-              <stop offset="50%" stopColor="white" stopOpacity="0.4" />
-              <stop offset="100%" stopColor={GREEN} stopOpacity="0.8" />
-            </linearGradient>
-          </defs>
-          {wave.length > 1 && (
-            <polyline
-              points={points}
-              fill="none"
-              stroke="url(#flowGrad)"
-              strokeWidth="1.4"
-              vectorEffect="non-scaling-stroke"
-              strokeLinejoin="round"
-              strokeLinecap="round"
+        {/* CENTER ENGINE */}
+        <div className="relative flex flex-col items-stretch justify-between rounded-xl border border-white/10 bg-black/50 p-2 backdrop-blur lg:p-3">
+          {/* polarity caps */}
+          <div className="flex items-center justify-between text-[9px] font-bold uppercase tracking-wider lg:text-[10px]">
+            <span style={{ color: GREEN, textShadow: `0 0 10px ${GREEN}99` }}>EVEN</span>
+            <span style={{ color: trendColor, textShadow: `0 0 8px ${trendColor}80` }}>{trendLabel}</span>
+            <span style={{ color: RED, textShadow: `0 0 10px ${RED}99` }}>ODD</span>
+          </div>
+
+          {/* AI scanner core */}
+          <div className="relative mx-auto my-1.5 flex h-16 w-16 items-center justify-center sm:h-20 sm:w-20 lg:h-24 lg:w-24">
+            {/* expanding rings */}
+            <span
+              className="pointer-events-none absolute inset-0 rounded-full border"
+              style={{
+                borderColor: `${sideColor}77`,
+                animation: "engine-ring 2.4s ease-out infinite",
+              }}
             />
-          )}
-        </svg>
+            <span
+              className="pointer-events-none absolute inset-0 rounded-full border"
+              style={{
+                borderColor: `${sideColor}55`,
+                animation: "engine-ring 2.4s ease-out 1.2s infinite",
+              }}
+            />
+            {/* core orb */}
+            <div
+              key={tick}
+              className="relative flex h-9 w-9 items-center justify-center rounded-full sm:h-11 sm:w-11 lg:h-14 lg:w-14"
+              style={{
+                background: `radial-gradient(circle at 35% 30%, oklch(1 0 0 / 0.95), ${sideColor})`,
+                boxShadow: `0 0 ${14 + intensity * 28}px ${sideColor}, inset 0 0 12px oklch(0 0 0 / 0.4)`,
+                animation: "engine-pulse 1.4s ease-in-out infinite",
+              }}
+            >
+              <span className="num text-[10px] font-extrabold tracking-tight text-black/85 sm:text-xs lg:text-sm">
+                {dominant}
+              </span>
+            </div>
+          </div>
 
-        {/* tick marks */}
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-1.5">
-          {Array.from({ length: 11 }).map((_, i) => (
-            <span key={i} className={cn("w-px", i === 5 ? "h-4 bg-white/35" : "h-1.5 bg-white/15")} />
-          ))}
+          {/* parity wave */}
+          <div className="relative h-8 w-full overflow-hidden rounded-md border border-white/10 bg-black/60 lg:h-10">
+            <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="signalGrad" x1="0" x2="1" y1="0" y2="0">
+                  <stop offset="0%" stopColor={GREEN} stopOpacity="0.85" />
+                  <stop offset="50%" stopColor="white" stopOpacity="0.55" />
+                  <stop offset="100%" stopColor={RED} stopOpacity="0.85" />
+                </linearGradient>
+              </defs>
+              {/* center axis */}
+              <line x1="0" y1="50" x2="100" y2="50" stroke="white" strokeOpacity="0.1" strokeDasharray="2 2" />
+              {wave.length > 1 && (
+                <polyline
+                  key={tick}
+                  points={points}
+                  fill="none"
+                  stroke="url(#signalGrad)"
+                  strokeWidth="1.6"
+                  vectorEffect="non-scaling-stroke"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                  style={{
+                    filter: `drop-shadow(0 0 4px ${sideColor})`,
+                  }}
+                />
+              )}
+            </svg>
+            {/* sweeping scanner line */}
+            <div
+              className="pointer-events-none absolute inset-y-0 w-px"
+              style={{
+                left: 0,
+                background: `linear-gradient(180deg, transparent, ${sideColor}, transparent)`,
+                boxShadow: `0 0 8px ${sideColor}`,
+                animation: "scan 2.6s linear infinite",
+              }}
+            />
+          </div>
         </div>
 
-        {/* center fill from middle to needle */}
-        <div
-          className="absolute inset-y-0 transition-[left,width,background] duration-300 ease-out"
-          style={{
-            left: `${Math.min(50, pos)}%`,
-            width: `${Math.abs(pos - 50)}%`,
-            background:
-              pressure >= 0
-                ? `linear-gradient(90deg, ${GREEN}33, ${GREEN}cc)`
-                : `linear-gradient(270deg, ${RED}33, ${RED}cc)`,
-            boxShadow: `0 0 ${10 + intensity * 22}px ${sideColor}cc`,
-          }}
+        <Bottle
+          side="ODD"
+          color={RED}
+          level={oddLevel}
+          pct={oddPct}
+          dominant={dominant === "ODD"}
+          intensity={oddIntensity}
+          bubbles={bubblesOdd}
+          tick={tick}
         />
-
-        {/* sweeping shimmer */}
-        <div
-          className="pointer-events-none absolute inset-y-0 w-1/3 animate-[scan_3.4s_linear_infinite] bg-gradient-to-r from-transparent via-white/15 to-transparent"
-          style={{ mixBlendMode: "screen" }}
-        />
-
-        {/* flowing particles */}
-        {particles.map((p) => (
-          <span
-            key={p.id}
-            className="pointer-events-none absolute h-1 w-1 rounded-full"
-            style={{
-              top: `${p.top}%`,
-              left: "-6%",
-              background: pressure >= 0 ? GREEN : RED,
-              boxShadow: `0 0 6px ${pressure >= 0 ? GREEN : RED}`,
-              animation: `flow ${p.duration}s linear ${p.delay}s infinite`,
-              opacity: 0.7,
-            }}
-          />
-        ))}
-
-        {/* momentum ghost marker */}
-        <div
-          className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/50 bg-white/10 transition-[left] duration-200 ease-out lg:h-3 lg:w-3"
-          style={{ left: `${momPos}%`, boxShadow: "0 0 6px oklch(1 0 0 / 0.4)" }}
-          title="Short-term momentum"
-        />
-
-        {/* main needle */}
-        <div
-          key={tick}
-          className="absolute top-1/2 h-9 w-[3px] -translate-x-1/2 -translate-y-1/2 rounded-full transition-[left] duration-300 ease-out lg:h-12 lg:w-[4px]"
-          style={{
-            left: `${pos}%`,
-            background: `linear-gradient(180deg, ${sideColor}, oklch(1 0 0 / 0.6), ${sideColor})`,
-            boxShadow: glow,
-          }}
-        >
-          <span
-            className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full"
-            style={{ background: sideColor, boxShadow: glow }}
-          />
-          <span
-            className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full"
-            style={{ background: sideColor, boxShadow: glow }}
-          />
-        </div>
       </div>
 
-      {/* analytics readouts — 6 stats responsive */}
+      {/* analytics readouts */}
       <div className="relative mt-3 grid grid-cols-3 gap-1.5 text-center md:grid-cols-6 lg:gap-2">
         <Mini label="Even" value={`${evenPct.toFixed(1)}%`} color={GREEN} />
-        <Mini label="Odd" value={`${oddPct.toFixed(1)}%`} color={RED} />
+        <Mini label="Odd"  value={`${oddPct.toFixed(1)}%`}  color={RED} />
         <Mini label="AI Signal" value={dominant} color={sideColor} pulse />
         <Mini label="Conf" value={`${confidence}%`} color={confidence >= 70 ? GREEN : confidence >= 60 ? CYAN : RED} />
         <Mini label="Momentum" value={`${momentum >= 0 ? "+" : ""}${momentum.toFixed(0)}`} color={momentum >= 0 ? GREEN : RED} />
@@ -765,6 +777,129 @@ function Thermometer({
           <span className={cn("num font-semibold", priceUp ? "text-bull" : "text-bear")}>{priceUp ? "▲" : "▼"}</span>
         </span>
         <span>Pressure <span className="num font-semibold" style={{ color: sideColor }}>{pressure >= 0 ? "+" : ""}{pressure.toFixed(1)}</span></span>
+      </div>
+    </div>
+  );
+}
+
+function Bottle({
+  side, color, level, pct, dominant, intensity, bubbles, tick,
+}: {
+  side: "EVEN" | "ODD";
+  color: string;
+  level: number;   // 0..100
+  pct: number;
+  dominant: boolean;
+  intensity: number; // 0..1 dominance intensity
+  bubbles: { id: number; left: number; size: number; delay: string; duration: string }[];
+  tick: number;
+}) {
+  const glow = `0 0 ${10 + intensity * 28}px ${color}`;
+  return (
+    <div className="relative flex flex-col items-center">
+      {/* label */}
+      <div
+        className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider lg:text-xs"
+        style={{ color, textShadow: `0 0 8px ${color}99` }}
+      >
+        {side === "EVEN" ? "◀ EVEN" : "ODD ▶"}
+      </div>
+
+      {/* bottle body */}
+      <div
+        className="relative h-44 w-14 overflow-hidden rounded-[14px] rounded-t-[28px] border border-white/15 sm:h-52 sm:w-16 lg:h-64 lg:w-20"
+        style={{
+          background:
+            "linear-gradient(180deg, oklch(0.18 0.02 240 / 0.7), oklch(0.08 0.01 240 / 0.85))",
+          boxShadow: dominant
+            ? `inset 0 0 0 1px ${color}55, ${glow}`
+            : `inset 0 0 0 1px ${color}22, 0 0 10px -6px ${color}`,
+        }}
+      >
+        {/* neck shadow */}
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-3 rounded-t-[28px]"
+          style={{
+            background: "linear-gradient(180deg, oklch(1 0 0 / 0.08), transparent)",
+          }}
+        />
+
+        {/* liquid fill */}
+        <div
+          className="absolute inset-x-0 bottom-0 transition-[height] duration-500 ease-out"
+          style={{
+            height: `${level}%`,
+            background: `linear-gradient(180deg, ${color}cc 0%, ${color} 60%, ${color}dd 100%)`,
+            boxShadow: `inset 0 -10px 24px ${color}, 0 -2px 18px ${color}88`,
+          }}
+        >
+          {/* surface wobble */}
+          <div
+            className="pointer-events-none absolute -top-1 left-0 h-2 w-[150%]"
+            style={{
+              background: `radial-gradient(ellipse at center, oklch(1 0 0 / 0.55), transparent 60%)`,
+              animation: "liquid-wobble 2.2s ease-in-out infinite",
+            }}
+          />
+          {/* inner glow shine */}
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background: `linear-gradient(180deg, oklch(1 0 0 / 0.18), transparent 40%)`,
+              animation: "liquid-shine 2.6s ease-in-out infinite",
+            }}
+          />
+        </div>
+
+        {/* bubbles inside liquid */}
+        {bubbles.map((b) => (
+          <span
+            key={b.id}
+            className="pointer-events-none absolute rounded-full"
+            style={{
+              left: `${b.left}%`,
+              bottom: "0",
+              width: `${b.size}px`,
+              height: `${b.size}px`,
+              background: "oklch(1 0 0 / 0.55)",
+              boxShadow: `0 0 6px oklch(1 0 0 / 0.7), 0 0 10px ${color}`,
+              animation: `bubble-rise ${b.duration}s ease-in ${b.delay}s infinite`,
+            }}
+          />
+        ))}
+
+        {/* glass shine left */}
+        <div
+          className="pointer-events-none absolute inset-y-0 left-1 w-1 rounded-full"
+          style={{ background: "linear-gradient(180deg, oklch(1 0 0 / 0.25), transparent 70%)" }}
+        />
+        {/* glass shine right */}
+        <div
+          className="pointer-events-none absolute inset-y-0 right-1 w-px"
+          style={{ background: "linear-gradient(180deg, transparent, oklch(1 0 0 / 0.18), transparent)" }}
+        />
+
+        {/* tick scale */}
+        <div className="pointer-events-none absolute inset-y-2 right-1.5 flex flex-col justify-between opacity-50">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <span key={i} className="block h-px w-1.5 bg-white/40" />
+          ))}
+        </div>
+
+        {/* tick pulse on update */}
+        <div
+          key={tick}
+          className="pointer-events-none absolute inset-0 animate-fade-out rounded-[14px]"
+          style={{ boxShadow: `inset 0 0 18px ${color}66` }}
+        />
+      </div>
+
+      {/* readout */}
+      <div
+        className="num mt-1.5 text-sm font-extrabold tabular-nums lg:text-base"
+        style={{ color, textShadow: `0 0 10px ${color}99` }}
+      >
+        {pct.toFixed(1)}%
       </div>
     </div>
   );
