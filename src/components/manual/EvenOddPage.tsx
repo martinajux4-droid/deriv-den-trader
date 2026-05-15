@@ -480,6 +480,88 @@ function Mini({ label, value, color, pulse }: { label: string; value: string; co
   );
 }
 
+function Thermometer({
+  pressure, momentum, edge, dominant, evenPct, oddPct, confidence, sample, tick,
+}: {
+  pressure: number; momentum: number; edge: number;
+  dominant: "EVEN" | "ODD"; evenPct: number; oddPct: number;
+  confidence: number; sample: number; tick: number;
+}) {
+  // pressure in [-100, 100] → needle position in [0%, 100%]
+  const pos = Math.max(0, Math.min(100, 50 + pressure / 2));
+  const momPos = Math.max(0, Math.min(100, 50 + momentum / 2));
+  const intensity = Math.min(1, edge / 30); // glow intensity scales with edge
+  const sideColor = dominant === "EVEN" ? GREEN : RED;
+  const glow = `0 0 ${10 + intensity * 28}px ${sideColor}`;
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/60 p-2.5 backdrop-blur"
+         style={{ boxShadow: `inset 0 0 0 1px ${sideColor}22, 0 0 ${12 + intensity * 18}px -10px ${sideColor}` }}>
+      <div className="mb-1.5 flex items-center justify-between text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
+        <span>Live Market Thermometer</span>
+        <span>n=<span className="num text-foreground">{sample}</span></span>
+      </div>
+
+      {/* polarity labels */}
+      <div className="mb-1 flex items-center justify-between text-[9px] font-bold uppercase tracking-wider">
+        <span style={{ color: RED, textShadow: `0 0 8px ${RED}88` }}>◀ ODD</span>
+        <span className="text-muted-foreground">Pressure</span>
+        <span style={{ color: GREEN, textShadow: `0 0 8px ${GREEN}88` }}>EVEN ▶</span>
+      </div>
+
+      {/* the bar */}
+      <div className="relative h-4 w-full overflow-visible rounded-full border border-white/10 bg-[linear-gradient(90deg,oklch(0.4_0.16_25/0.35),oklch(0.18_0.02_240/0.4)_50%,oklch(0.4_0.18_145/0.35))]">
+        {/* tick marks */}
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-1">
+          {Array.from({ length: 11 }).map((_, i) => (
+            <span key={i} className={cn("h-1.5 w-px", i === 5 ? "h-3 bg-white/40" : "bg-white/15")} />
+          ))}
+        </div>
+        {/* center fill from middle to needle */}
+        <div
+          className="absolute inset-y-0 transition-[left,width,background] duration-300 ease-out"
+          style={{
+            left: `${Math.min(50, pos)}%`,
+            width: `${Math.abs(pos - 50)}%`,
+            background: pressure >= 0
+              ? `linear-gradient(90deg, ${GREEN}55, ${GREEN})`
+              : `linear-gradient(270deg, ${RED}55, ${RED})`,
+            boxShadow: `0 0 ${6 + intensity * 14}px ${sideColor}aa`,
+            opacity: 0.85,
+          }}
+        />
+        {/* momentum ghost marker */}
+        <div
+          className="absolute top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/40 bg-white/10 transition-[left] duration-200 ease-out"
+          style={{ left: `${momPos}%` }}
+          title="Short-term momentum"
+        />
+        {/* main needle */}
+        <div
+          key={tick}
+          className="absolute top-1/2 h-6 w-[3px] -translate-x-1/2 -translate-y-1/2 rounded-full transition-[left,background,box-shadow] duration-300 ease-out"
+          style={{
+            left: `${pos}%`,
+            background: sideColor,
+            boxShadow: glow,
+          }}
+        />
+      </div>
+
+      {/* readouts */}
+      <div className="mt-2 grid grid-cols-4 gap-1.5 text-center">
+        <Mini label="Even" value={`${evenPct.toFixed(1)}%`} color={GREEN} />
+        <Mini label="Odd" value={`${oddPct.toFixed(1)}%`} color={RED} />
+        <Mini label="AI" value={dominant} color={sideColor} pulse />
+        <Mini label="Conf" value={`${confidence}%`} color={confidence >= 70 ? GREEN : confidence >= 60 ? CYAN : RED} />
+      </div>
+      <div className="mt-1.5 flex items-center justify-between px-0.5 text-[9px] uppercase tracking-wider text-muted-foreground">
+        <span>Edge <span className="num font-semibold text-foreground">{edge.toFixed(2)}%</span></span>
+        <span>Momentum <span className="num font-semibold" style={{ color: momentum >= 0 ? GREEN : RED }}>{momentum >= 0 ? "+" : ""}{momentum.toFixed(0)}</span></span>
+      </div>
+    </div>
+  );
+}
+
 function NumField({ label, value, onChange, step = 1, min = 0, suffix }: {
   label: string; value: number; onChange: (n: number) => void; step?: number; min?: number; suffix?: string;
 }) {
