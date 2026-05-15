@@ -179,11 +179,13 @@ export class DerivClient {
   }
 
   // Wait for a contract to settle (poll proposal_open_contract)
-  async waitForContract(contract_id: number): Promise<any> {
+  async waitForContract(contract_id: number, onUpdate?: (c: any) => void): Promise<any> {
     return new Promise((resolve, reject) => {
       const off = this.on("proposal_open_contract", (msg) => {
         const c = msg.proposal_open_contract;
-        if (c?.contract_id === contract_id && c.is_sold) {
+        if (c?.contract_id !== contract_id) return;
+        try { onUpdate?.(c); } catch {}
+        if (c.is_sold) {
           off();
           this.send({ forget: msg.subscription?.id }).catch(() => {});
           resolve(c);
