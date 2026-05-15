@@ -30,12 +30,13 @@ const STRATEGY: Record<StrategyId, {
   accent: string; // css color
   accentBg: string;
   accentLabel: string;
+  theme: string; // risk-panel theme class
 }> = {
-  "even-odd":         { title: "Even / Odd",        subtitle: "Last-digit parity strategy", contracts: ["DIGITEVEN", "DIGITODD"], labels: ["EVEN", "ODD"],         needsBarrier: false, showDigit: false, accent: "var(--meter-bull)",     accentBg: "oklch(0.7 0.18 250 / 0.18)",  accentLabel: "Parity AI" },
-  "over-under":       { title: "Over / Under",      subtitle: "Digit threshold prediction", contracts: ["DIGITOVER", "DIGITUNDER"], labels: ["OVER", "UNDER"],     needsBarrier: true,  showDigit: true,  accent: "var(--meter-momentum)", accentBg: "oklch(0.82 0.16 200 / 0.16)", accentLabel: "Threshold AI" },
-  "matches-differs":  { title: "Matches / Differs", subtitle: "Digit pattern recognition",  contracts: ["DIGITMATCH", "DIGITDIFF"], labels: ["MATCHES", "DIFFERS"], needsBarrier: true,  showDigit: true,  accent: "var(--meter-ai)",       accentBg: "oklch(0.86 0.14 90 / 0.16)",  accentLabel: "Pattern AI" },
-  "rise-fall":        { title: "Rise / Fall",       subtitle: "Directional momentum trades", contracts: ["CALL", "PUT"], labels: ["RISE", "FALL"],                 needsBarrier: false, showDigit: false, accent: "var(--meter-bear)",     accentBg: "oklch(0.65 0.22 25 / 0.14)",  accentLabel: "Momentum AI" },
-  "under-digit":      { title: "Under / Digit",     subtitle: "Smart digit prediction matrix", contracts: ["DIGITUNDER", "DIGITOVER"], labels: ["UNDER", "OVER"],     needsBarrier: true,  showDigit: true,  accent: "oklch(0.78 0.16 320)",  accentBg: "oklch(0.78 0.16 320 / 0.16)", accentLabel: "Predictive AI" },
+  "even-odd":         { title: "Even / Odd",        subtitle: "Last-digit parity strategy", contracts: ["DIGITEVEN", "DIGITODD"], labels: ["EVEN", "ODD"],         needsBarrier: false, showDigit: false, accent: "var(--meter-bull)",     accentBg: "oklch(0.7 0.18 250 / 0.18)",  accentLabel: "Parity AI",     theme: "risk-panel-evenodd" },
+  "over-under":       { title: "Over / Under",      subtitle: "Digit threshold prediction", contracts: ["DIGITOVER", "DIGITUNDER"], labels: ["OVER", "UNDER"],     needsBarrier: true,  showDigit: true,  accent: "var(--meter-momentum)", accentBg: "oklch(0.82 0.16 200 / 0.16)", accentLabel: "Threshold AI", theme: "risk-panel-overunder" },
+  "matches-differs":  { title: "Matches / Differs", subtitle: "Digit pattern recognition",  contracts: ["DIGITMATCH", "DIGITDIFF"], labels: ["MATCHES", "DIFFERS"], needsBarrier: true,  showDigit: true,  accent: "var(--meter-ai)",       accentBg: "oklch(0.86 0.14 90 / 0.16)",  accentLabel: "Pattern AI",   theme: "risk-panel-matches" },
+  "rise-fall":        { title: "Rise / Fall",       subtitle: "Directional momentum trades", contracts: ["CALL", "PUT"], labels: ["RISE", "FALL"],                 needsBarrier: false, showDigit: false, accent: "var(--meter-bear)",     accentBg: "oklch(0.65 0.22 25 / 0.14)",  accentLabel: "Momentum AI", theme: "risk-panel-risefall" },
+  "under-digit":      { title: "Under / Digit",     subtitle: "Smart digit prediction matrix", contracts: ["DIGITUNDER", "DIGITOVER"], labels: ["UNDER", "OVER"],     needsBarrier: true,  showDigit: true,  accent: "oklch(0.78 0.16 320)",  accentBg: "oklch(0.78 0.16 320 / 0.16)", accentLabel: "Predictive AI", theme: "risk-panel-overunder" },
 };
 
 function Meter({ id, symbol, digit, trading }: {
@@ -256,7 +257,9 @@ export function StrategyPage({ id }: { id: StrategyId }) {
 
         {/* Inputs + actions — Premium AI Risk Control Panel */}
         <div className="space-y-3">
-          <div className="risk-panel p-4">
+          <div className={`risk-panel ${meta.theme} p-4`}>
+            <div className="risk-panel-particles" aria-hidden />
+            <div className="risk-panel-scan" aria-hidden />
             <div className="mb-3 flex items-center justify-between">
               <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">AI Risk Control</div>
               <span className={`flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium ${running ? "border-bull/40 bg-bull/10 text-bull" : "border-white/10 bg-white/[0.02] text-muted-foreground"}`}>
