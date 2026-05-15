@@ -889,7 +889,7 @@ function Bottle({
         {/* tick pulse on update */}
         <div
           key={tick}
-          className="pointer-events-none absolute inset-0 animate-fade-out rounded-[14px]"
+          className="pointer-events-none absolute inset-0 rounded-[14px] opacity-0 animate-[liquid-shine_0.6s_ease-out]"
           style={{ boxShadow: `inset 0 0 18px ${color}66` }}
         />
       </div>
