@@ -46,7 +46,7 @@ function Meter({ id, symbol, digit, trading }: {
     onStart: () => void; onPause: () => void; onStop: () => void; onTradeNow: () => void;
   };
 }) {
-  if (id === "even-odd") return <EvenOddBoard symbol={symbol} />;
+  if (id === "even-odd") return <MarketThermometer mode="even-odd" symbol={symbol} {...(trading || {})} />;
   if (id === "over-under") return <OverUnderHistogram symbol={symbol} barrier={digit} />;
   if (id === "matches-differs") return <DigitFrequencyMatrix symbol={symbol} target={digit} />;
   if (id === "under-digit") return <DigitFrequencyMatrix symbol={symbol} target={digit} />;
