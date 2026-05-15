@@ -435,37 +435,65 @@ export function EvenOddPage() {
       </div>
       </div>
 
-      {/* TRADE HISTORY — full width across grid */}
+      {/* TRADE HISTORY — mobile: scrollable cards, desktop: full table */}
       <div className="rounded-2xl border border-white/10 bg-black/60 p-2 backdrop-blur lg:p-4">
         <div className="mb-1 flex items-center justify-between px-1 text-[9px] uppercase tracking-[0.2em] text-muted-foreground lg:text-[11px]">
           <span>Recent Trades</span>
           <span>Last 8</span>
         </div>
-        <div className="overflow-hidden rounded-lg border border-white/5">
-          <table className="w-full text-[10px] lg:text-sm">
+
+        {/* MOBILE: horizontal scrollable cards */}
+        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden">
+          {history.length === 0 && (
+            <div className="flex-none rounded-xl border border-white/10 bg-white/[0.03] px-4 py-5 text-[10px] text-muted-foreground">No trades yet</div>
+          )}
+          {history.map((t) => {
+            const isEven = t.contract_type === "DIGITEVEN";
+            const won = (t.profit ?? 0) > 0;
+            return (
+              <div key={t.id} className="flex-none w-36 rounded-xl border border-white/10 bg-white/[0.03] p-2.5">
+                <div className="mb-1.5 flex items-center justify-between">
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold" style={{ background: isEven ? GREEN : RED, color: "#000" }}>{isEven ? "E" : "O"}</span>
+                  <span className={cn("text-[10px] font-bold", won ? "text-bull" : (t.profit ?? 0) < 0 ? "text-bear" : "text-muted-foreground")}>
+                    {t.profit == null ? "…" : `${won ? "+" : ""}${t.profit.toFixed(2)}`}
+                  </span>
+                </div>
+                <div className="space-y-0.5">
+                  <div className="flex items-center justify-between text-[9px] text-muted-foreground"><span>Stake</span><span className="num text-foreground">{t.stake.toFixed(2)}</span></div>
+                  <div className="flex items-center justify-between text-[9px] text-muted-foreground"><span>Entry</span><span className="num text-foreground">{t.entry_spot?.toFixed(3) ?? "—"}</span></div>
+                  <div className="flex items-center justify-between text-[9px] text-muted-foreground"><span>Exit</span><span className="num text-foreground">{t.exit_spot?.toFixed(3) ?? "—"}</span></div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* DESKTOP: full width table */}
+        <div className="hidden overflow-hidden rounded-lg border border-white/5 md:block">
+          <table className="w-full text-sm">
             <thead className="bg-white/[0.03] text-muted-foreground">
               <tr>
-                <th className="px-1.5 py-1 text-left font-medium uppercase tracking-wider lg:px-3 lg:py-2">Type</th>
-                <th className="px-1.5 py-1 text-right font-medium uppercase tracking-wider lg:px-3 lg:py-2">Stake</th>
-                <th className="px-1.5 py-1 text-right font-medium uppercase tracking-wider lg:px-3 lg:py-2">Entry</th>
-                <th className="px-1.5 py-1 text-right font-medium uppercase tracking-wider lg:px-3 lg:py-2">Exit</th>
-                <th className="px-1.5 py-1 text-right font-medium uppercase tracking-wider lg:px-3 lg:py-2">P/L</th>
+                <th className="px-3 py-2 text-left font-medium uppercase tracking-wider">Type</th>
+                <th className="px-3 py-2 text-right font-medium uppercase tracking-wider">Stake</th>
+                <th className="px-3 py-2 text-right font-medium uppercase tracking-wider">Entry</th>
+                <th className="px-3 py-2 text-right font-medium uppercase tracking-wider">Exit</th>
+                <th className="px-3 py-2 text-right font-medium uppercase tracking-wider">P/L</th>
               </tr>
             </thead>
             <tbody>
               {history.length === 0 && (
-                <tr><td colSpan={5} className="px-1.5 py-3 text-center text-muted-foreground">No trades yet</td></tr>
+                <tr><td colSpan={5} className="px-3 py-3 text-center text-muted-foreground">No trades yet</td></tr>
               )}
               {history.map((t) => {
                 const isEven = t.contract_type === "DIGITEVEN";
                 const won = (t.profit ?? 0) > 0;
                 return (
                   <tr key={t.id} className="border-t border-white/5">
-                    <td className="px-1.5 py-1 font-semibold lg:px-3 lg:py-2" style={{ color: isEven ? GREEN : RED, textShadow: `0 0 6px ${isEven ? GREEN : RED}66` }}>{isEven ? "E" : "O"}</td>
-                    <td className="num px-1.5 py-1 text-right lg:px-3 lg:py-2">{t.stake.toFixed(2)}</td>
-                    <td className="num px-1.5 py-1 text-right text-muted-foreground lg:px-3 lg:py-2">{t.entry_spot?.toFixed(3) ?? "—"}</td>
-                    <td className="num px-1.5 py-1 text-right text-muted-foreground lg:px-3 lg:py-2">{t.exit_spot?.toFixed(3) ?? "—"}</td>
-                    <td className={cn("num px-1.5 py-1 text-right font-bold lg:px-3 lg:py-2", won ? "text-bull" : (t.profit ?? 0) < 0 ? "text-bear" : "text-muted-foreground")}>
+                    <td className="px-3 py-2 font-semibold" style={{ color: isEven ? GREEN : RED, textShadow: `0 0 6px ${isEven ? GREEN : RED}66` }}>{isEven ? "E" : "O"}</td>
+                    <td className="num px-3 py-2 text-right">{t.stake.toFixed(2)}</td>
+                    <td className="num px-3 py-2 text-right text-muted-foreground">{t.entry_spot?.toFixed(3) ?? "—"}</td>
+                    <td className="num px-3 py-2 text-right text-muted-foreground">{t.exit_spot?.toFixed(3) ?? "—"}</td>
+                    <td className={cn("num px-3 py-2 text-right font-bold", won ? "text-bull" : (t.profit ?? 0) < 0 ? "text-bear" : "text-muted-foreground")}>
                       {t.profit == null ? "…" : `${won ? "+" : ""}${t.profit.toFixed(2)}`}
                     </td>
                   </tr>
