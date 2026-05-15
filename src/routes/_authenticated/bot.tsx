@@ -358,9 +358,6 @@ function BotPage() {
         onEmergency={emergency}
       />
 
-      {/* ACTIVE TRADE MONITOR — institutional entry/exit tracking */}
-      <ActiveTradeMonitor />
-
       {/* TWO-COLUMN: settings (collapsible) + live feed */}
       <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
         {/* LEFT: configuration */}
