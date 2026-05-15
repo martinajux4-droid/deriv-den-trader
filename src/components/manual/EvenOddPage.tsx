@@ -183,7 +183,7 @@ export function EvenOddPage() {
   const upd = <K extends keyof Cfg>(k: K, v: Cfg[K]) => setCfg((c) => ({ ...c, [k]: v }));
 
   return (
-    <div className="mx-auto w-full max-w-[1500px] space-y-3 px-2 pb-28 sm:px-4 lg:px-6">
+    <div className="mx-auto w-full max-w-[1600px] space-y-3 px-2 pb-28 sm:px-4 lg:px-8 xl:px-10">
       {/* TOP HEADER — one row */}
       <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-black/60 p-2 backdrop-blur lg:gap-3 lg:p-3">
         <Link to="/manual" className="grid h-8 w-8 flex-none place-items-center rounded-lg border border-white/10 bg-white/[0.03] text-muted-foreground hover:text-foreground">
@@ -243,10 +243,10 @@ export function EvenOddPage() {
       </div>
 
       {/* RESPONSIVE GRID — single column on mobile, 12-col terminal on desktop */}
-      <div className="grid gap-3 lg:grid-cols-12">
+      <div className="grid gap-3 lg:grid-cols-12 lg:gap-4 xl:gap-6">
 
       {/* LEFT COLUMN — selector + price + digits + thermometer */}
-      <div className="space-y-3 lg:col-span-8">
+      <div className="space-y-3 lg:col-span-8 lg:space-y-4">
       {/* EVEN/ODD glowing segmented selector */}
       <div className="lg:sticky lg:top-2 lg:z-30">
         <div className="grid grid-cols-2 gap-1 rounded-2xl border border-white/10 bg-black/70 p-1 backdrop-blur-xl"
@@ -344,7 +344,7 @@ export function EvenOddPage() {
       </div>
 
       {/* RIGHT COLUMN — risk + controls + manual */}
-      <div className="space-y-3 lg:col-span-4">
+      <div className="space-y-3 lg:col-span-4 lg:space-y-4">
 
       {/* RISK CONTROL PANEL — compact grid */}
       <div className="rounded-2xl border border-white/10 bg-black/60 p-2.5 backdrop-blur lg:p-4"
