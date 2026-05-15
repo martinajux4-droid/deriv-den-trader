@@ -17,12 +17,9 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { toast } from "sonner";
 import { AlertTriangle, Settings2, ChevronDown, Brain, TrendingUp, Hash, Sigma, Shuffle, Zap, Sparkles } from "lucide-react";
 import { setBotStatus, emitBotEvent, emitTakeProfit } from "@/hooks/use-bot-status";
-import { LiveTradeFeed } from "@/components/LiveTradeFeed";
 import { BotLaunchOverlay } from "@/components/BotLaunchOverlay";
 import { BotCommandCenter } from "@/components/BotCommandCenter";
-import { AIMarketScanner } from "@/components/AIMarketScanner";
 import { RiskManagementSetup, assessRisk, type RiskValues } from "@/components/RiskManagementSetup";
-import { ActiveTradeMonitor } from "@/components/ActiveTradeMonitor";
 import { cn } from "@/lib/utils";
 import { playBoot, playExecute, playProfit, playLoss, startScanLoop, stopScanLoop, primeAudio } from "@/lib/audio-engine";
 
