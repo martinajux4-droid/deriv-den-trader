@@ -19,6 +19,7 @@ const GREEN = "oklch(0.78 0.2 145)";
 const GREEN_SOFT = "oklch(0.78 0.2 145 / 0.18)";
 const CYAN = "oklch(0.82 0.16 200)";
 const RED = "oklch(0.7 0.18 25)";
+const RED_SOFT = "oklch(0.7 0.18 25 / 0.18)";
 const SLATE = "oklch(0.55 0.04 240)";
 
 function lastDigit(q: number) {
@@ -131,6 +132,17 @@ export function EvenOddPage() {
   const oddA = useAnimatedNumber(oddPct, 380);
   const dominant: "EVEN" | "ODD" = evenPct >= oddPct ? "EVEN" : "ODD";
   const edge = Math.abs(evenPct - oddPct);
+  // signed pressure: +100 fully EVEN, -100 fully ODD
+  const pressure = evenPct - oddPct;
+  const pressureA = useAnimatedNumber(pressure, 420);
+  // short-term momentum from last N digits
+  const momentumWin = 20;
+  const recentForMomentum = digits.slice(-momentumWin);
+  const recentEvens = recentForMomentum.filter((d) => d % 2 === 0).length;
+  const momentum = recentForMomentum.length
+    ? ((recentEvens / recentForMomentum.length) * 100 - 50) * 2
+    : 0;
+  const momentumA = useAnimatedNumber(momentum, 320);
   let streak = 0;
   for (let i = digits.length - 1; i >= 0; i--) {
     const isEven = digits[i] % 2 === 0;
@@ -233,24 +245,24 @@ export function EvenOddPage() {
       {/* EVEN/ODD glowing segmented selector — sticky */}
       <div className="sticky top-2 z-30">
         <div className="grid grid-cols-2 gap-1 rounded-2xl border border-white/10 bg-black/70 p-1 backdrop-blur-xl"
-             style={{ boxShadow: `0 6px 22px -10px ${direction === 0 ? GREEN : SLATE}` }}>
+             style={{ boxShadow: `0 6px 22px -10px ${direction === 0 ? GREEN : RED}` }}>
           {(["EVEN", "ODD"] as const).map((lbl, i) => {
             const active = direction === i;
-            const color = i === 0 ? GREEN : "oklch(0.85 0.02 240)";
+            const color = i === 0 ? GREEN : RED;
             return (
               <button key={lbl} onClick={() => setDirection(i as 0 | 1)}
                 className={cn(
                   "relative rounded-xl py-2 text-xs font-bold uppercase tracking-[0.22em] transition-all",
-                  active ? "scale-[1.01]" : "text-muted-foreground hover:text-foreground",
+                  active ? "scale-[1.01] animate-pulse" : "text-muted-foreground hover:text-foreground",
                 )}
                 style={active ? {
                   background: i === 0
                     ? `linear-gradient(180deg, ${GREEN_SOFT}, oklch(0.18 0.08 145 / 0.45))`
-                    : `linear-gradient(180deg, oklch(0.32 0.02 240 / 0.6), oklch(0.18 0.02 240 / 0.5))`,
+                    : `linear-gradient(180deg, ${RED_SOFT}, oklch(0.22 0.12 25 / 0.45))`,
                   color,
                   boxShadow: i === 0
                     ? `inset 0 0 0 1px ${GREEN}55, 0 0 18px -2px ${GREEN}aa`
-                    : `inset 0 0 0 1px ${SLATE}, 0 0 14px -4px ${SLATE}`,
+                    : `inset 0 0 0 1px ${RED}66, 0 0 18px -2px ${RED}aa`,
                   textShadow: `0 0 10px ${color}88`,
                 } : undefined}>
                 {lbl}
@@ -272,7 +284,7 @@ export function EvenOddPage() {
             </span>
             <div>
               <div className="text-[8px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Live · {symbol}</div>
-              <div className="text-[10px] text-muted-foreground">Last <span className="num font-bold" style={{ color: last % 2 === 0 ? GREEN : "oklch(0.85 0.02 240)" }}>{last}</span></div>
+              <div className="text-[10px] text-muted-foreground">Last <span className="num font-bold" style={{ color: last % 2 === 0 ? GREEN : RED, textShadow: `0 0 8px ${last % 2 === 0 ? GREEN : RED}88` }}>{last}</span></div>
             </div>
           </div>
           <div className="text-right">
@@ -301,9 +313,9 @@ export function EvenOddPage() {
                   borderColor: GREEN, color: "oklch(0.12 0.04 145)",
                   boxShadow: isLast ? `0 0 10px ${GREEN}` : `0 0 4px ${GREEN}55`,
                 } : {
-                  background: "radial-gradient(circle at 30% 30%, oklch(0.42 0.03 240), oklch(0.18 0.02 240))",
-                  borderColor: SLATE, color: "oklch(0.92 0.02 240)",
-                  boxShadow: isLast ? `0 0 8px ${SLATE}` : "none",
+                  background: `radial-gradient(circle at 30% 30%, ${RED}, oklch(0.4 0.16 25))`,
+                  borderColor: RED, color: "oklch(0.98 0 0)",
+                  boxShadow: isLast ? `0 0 10px ${RED}` : `0 0 4px ${RED}55`,
                 }}>
                 {d}
               </div>
@@ -312,25 +324,18 @@ export function EvenOddPage() {
         </div>
       </div>
 
-      {/* MARKET METER — horizontal glow bar */}
-      <div className="rounded-2xl border border-white/10 bg-black/60 p-2.5 backdrop-blur">
-        <div className="mb-1.5 flex items-center justify-between text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
-          <span>AI Market Meter</span>
-          <span>n=<span className="num text-foreground">{total}</span></span>
-        </div>
-        <div className="relative h-3 w-full overflow-hidden rounded-full border border-white/10 bg-white/[0.04]">
-          <div className="absolute inset-y-0 left-0 transition-all duration-500"
-               style={{ width: `${evenA}%`, background: `linear-gradient(90deg, oklch(0.45 0.18 145), ${GREEN})`, boxShadow: `0 0 12px ${GREEN}aa` }} />
-          <div className="absolute inset-y-0 right-0 transition-all duration-500"
-               style={{ width: `${oddA}%`, background: `linear-gradient(270deg, ${SLATE}, oklch(0.22 0.02 240))` }} />
-        </div>
-        <div className="mt-2 grid grid-cols-4 gap-1.5 text-center">
-          <Mini label="Even" value={`${evenA.toFixed(1)}%`} color={GREEN} />
-          <Mini label="Odd" value={`${oddA.toFixed(1)}%`} color="oklch(0.85 0.02 240)" />
-          <Mini label="AI" value={dominant} color={dominant === "EVEN" ? GREEN : "oklch(0.85 0.02 240)"} pulse />
-          <Mini label="Conf" value={`${confidence}%`} color={confidence >= 70 ? GREEN : confidence >= 60 ? CYAN : RED} />
-        </div>
-      </div>
+      {/* MARKET THERMOMETER — centered live needle */}
+      <Thermometer
+        pressure={pressureA}
+        momentum={momentumA}
+        edge={edge}
+        dominant={dominant}
+        evenPct={evenA}
+        oddPct={oddA}
+        confidence={confidence}
+        sample={total}
+        tick={lastEpoch}
+      />
 
       {/* RISK CONTROL PANEL — compact grid */}
       <div className="rounded-2xl border border-white/10 bg-black/60 p-2.5 backdrop-blur"
@@ -411,9 +416,10 @@ export function EvenOddPage() {
           <button onClick={() => placeOnce(false, 1)} disabled={busy}
             className="rounded-xl border py-2 text-xs font-bold uppercase tracking-[0.18em] transition hover:scale-[1.01] disabled:opacity-50"
             style={{
-              borderColor: SLATE, color: "oklch(0.92 0.02 240)",
-              background: "linear-gradient(180deg, oklch(0.32 0.02 240 / 0.5), transparent)",
-              boxShadow: `0 0 12px -6px ${SLATE}, inset 0 0 0 1px ${SLATE}55`,
+              borderColor: `${RED}66`, color: RED,
+              background: `linear-gradient(180deg, ${RED_SOFT}, transparent)`,
+              boxShadow: `0 0 14px -6px ${RED}, inset 0 0 0 1px ${RED}33`,
+              textShadow: `0 0 8px ${RED}88`,
             }}>ODD</button>
         </div>
       </div>
@@ -444,7 +450,7 @@ export function EvenOddPage() {
                 const won = (t.profit ?? 0) > 0;
                 return (
                   <tr key={t.id} className="border-t border-white/5">
-                    <td className="px-1.5 py-1 font-semibold" style={{ color: isEven ? GREEN : "oklch(0.85 0.02 240)" }}>{isEven ? "E" : "O"}</td>
+                    <td className="px-1.5 py-1 font-semibold" style={{ color: isEven ? GREEN : RED, textShadow: `0 0 6px ${isEven ? GREEN : RED}66` }}>{isEven ? "E" : "O"}</td>
                     <td className="num px-1.5 py-1 text-right">{t.stake.toFixed(2)}</td>
                     <td className="num px-1.5 py-1 text-right text-muted-foreground">{t.entry_spot?.toFixed(3) ?? "—"}</td>
                     <td className="num px-1.5 py-1 text-right text-muted-foreground">{t.exit_spot?.toFixed(3) ?? "—"}</td>
