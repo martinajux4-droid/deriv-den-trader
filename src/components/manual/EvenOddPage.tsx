@@ -835,6 +835,28 @@ function Bottle({
           }}
         />
 
+        {/* Y-axis gridlines + scale numbers */}
+        <div className="pointer-events-none absolute inset-0">
+          {[20, 40, 60, 80].map((g) => (
+            <div
+              key={g}
+              className="absolute inset-x-0 flex items-center"
+              style={{ bottom: `${g}%` }}
+            >
+              <span
+                className={cn(
+                  "num text-[7px] font-semibold tabular-nums leading-none lg:text-[8px]",
+                  side === "EVEN" ? "ml-0.5" : "ml-auto mr-0.5",
+                )}
+                style={{ color: "oklch(1 0 0 / 0.45)" }}
+              >
+                {g}
+              </span>
+              <span className="absolute inset-x-0 h-px bg-white/10" />
+            </div>
+          ))}
+        </div>
+
         {/* liquid fill */}
         <div
           className="absolute inset-x-0 bottom-0 transition-[height] duration-500 ease-out"
@@ -891,10 +913,37 @@ function Bottle({
         />
 
         {/* tick scale */}
-        <div className="pointer-events-none absolute inset-y-2 right-1.5 flex flex-col justify-between opacity-50">
+        <div
+          className={cn(
+            "pointer-events-none absolute inset-y-2 flex flex-col justify-between opacity-60",
+            side === "EVEN" ? "right-1.5" : "left-1.5",
+          )}
+        >
           {Array.from({ length: 5 }).map((_, i) => (
             <span key={i} className="block h-px w-1.5 bg-white/40" />
           ))}
+        </div>
+
+        {/* floating live counter that rides on top of the liquid */}
+        <div
+          key={tick}
+          className="pointer-events-none absolute inset-x-0 z-10 flex justify-center transition-[bottom] duration-500 ease-out"
+          style={{
+            bottom: `calc(${level}% - 9px)`,
+          }}
+        >
+          <span
+            className="num rounded-full border px-1.5 py-px text-[9px] font-extrabold tabular-nums backdrop-blur-sm lg:text-[10px] animate-[liquid-shine_0.6s_ease-out]"
+            style={{
+              color,
+              background: "oklch(0 0 0 / 0.7)",
+              borderColor: `${color}aa`,
+              boxShadow: `0 0 10px ${color}88, inset 0 0 6px ${color}44`,
+              textShadow: `0 0 6px ${color}`,
+            }}
+          >
+            {pct.toFixed(1)}%
+          </span>
         </div>
 
         {/* tick pulse on update */}
