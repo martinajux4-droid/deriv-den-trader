@@ -248,6 +248,16 @@ export class BotRunner {
       return;
     }
 
+    // Pre-load recent ticks so the AI can analyze and decide immediately
+    try {
+      const hist: any = await client.send({
+        ticks_history: cfg.symbol, count: 60, end: "latest", style: "ticks",
+      });
+      if (hist?.history?.prices) {
+        this.lastTicks = (hist.history.prices as any[]).map((p) => Number(p)).slice(-60);
+      }
+    } catch {}
+
     const off = await client.subscribeTicks(cfg.symbol, (t) => {
       this.lastTicks.push(t.quote);
       if (this.lastTicks.length > 60) this.lastTicks.shift();
@@ -273,7 +283,7 @@ export class BotRunner {
         // need enough ticks for analysis
         if (this.lastTicks.length < 15) {
           this.setState("scanning", "Collecting market data");
-          await sleep(800);
+          await sleep(200);
           continue;
         }
 
@@ -283,7 +293,7 @@ export class BotRunner {
         const decision = this.decide(analysis);
         if (!decision) {
           this.setState("waiting_entry", `Waiting · conf ${analysis.confidence}% · ${analysis.recommendationText}`);
-          await sleep(1500);
+          await sleep(400);
           continue;
         }
 
@@ -341,7 +351,7 @@ export class BotRunner {
           }
           await sleep(1500);
         }
-        await sleep(400);
+        await sleep(150);
       }
     } finally {
       off?.();
