@@ -776,7 +776,38 @@
   0%   { transform: translateX(-100%); }
   100% { transform: translateX(400%); }
 }
+@keyframes liquid-wobble {
+  0%,100% { transform: translateX(-25%) translateY(0); }
+  50%     { transform: translateX(-25%) translateY(-3px); }
+}
+@keyframes liquid-shine {
+  0%   { transform: translateY(0)   scaleY(1); opacity: 0.55; }
+  50%  { transform: translateY(-4px) scaleY(1.05); opacity: 0.85; }
+  100% { transform: translateY(0)   scaleY(1); opacity: 0.55; }
+}
+@keyframes bubble-rise {
+  0%   { transform: translateY(0)     scale(0.7); opacity: 0; }
+  15%  { opacity: 0.9; }
+  85%  { opacity: 0.7; }
+  100% { transform: translateY(-260px) scale(1.1); opacity: 0; }
+}
+@keyframes engine-pulse {
+  0%,100% { transform: scale(1);    opacity: 0.85; }
+  50%     { transform: scale(1.08); opacity: 1; }
+}
+@keyframes engine-ring {
+  0%   { transform: scale(0.6); opacity: 0.7; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+@keyframes signal-sweep {
+  0%   { stroke-dashoffset: 200; }
+  100% { stroke-dashoffset: 0; }
+}
 @media (prefers-reduced-motion: reduce) {
   .animate-\[flow_3\.4s_linear_infinite\],
-  .animate-\[scan_3\.4s_linear_infinite\] { animation: none !important; }
+  .animate-\[scan_3\.4s_linear_infinite\],
+  [style*="liquid-wobble"],
+  [style*="bubble-rise"],
+  [style*="engine-pulse"],
+  [style*="engine-ring"] { animation: none !important; }
 }
