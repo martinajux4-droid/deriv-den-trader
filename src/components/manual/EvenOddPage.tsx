@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
-  ArrowLeft, Play, Pause, Square, Zap, User, Wifi, ChevronDown,
+  ArrowLeft, Play, Pause, Square, Zap, User, Wifi, ChevronDown, Trash2,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useDeriv } from "@/hooks/use-deriv";
@@ -14,6 +14,11 @@ import { toast } from "sonner";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
+  AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const GREEN = "oklch(0.78 0.2 145)";
 const GREEN_SOFT = "oklch(0.78 0.2 145 / 0.18)";
