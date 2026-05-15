@@ -316,8 +316,7 @@ export function StrategyPage({ id }: { id: StrategyId }) {
   const headerAccent = useMemo(() => ({ background: meta.accentBg, color: meta.accent }), [meta]);
 
   // Header live status
-  const headerTicks = useTicks(symbol, 60);
-  const headerAnalysis = analyze(headerTicks.map((t) => t.quote));
+  const headerAnalysis = aiAnalysis;
   const ready = (headerAnalysis?.entryScore ?? 0) >= 60 && (headerAnalysis?.confidence ?? 0) >= 70;
   const vol = headerAnalysis?.volatility ?? 0;
 
