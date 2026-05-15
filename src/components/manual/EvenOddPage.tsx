@@ -187,6 +187,23 @@ export function EvenOddPage() {
 
   const upd = <K extends keyof Cfg>(k: K, v: Cfg[K]) => setCfg((c) => ({ ...c, [k]: v }));
 
+  const clearHistory = async () => {
+    if (!user) return;
+    const { error } = await supabase
+      .from("trades")
+      .delete()
+      .eq("user_id", user.id)
+      .in("contract_type", ["DIGITEVEN", "DIGITODD"]);
+    if (error) {
+      toast.error(error.message || "Failed to clear history");
+      return;
+    }
+    setHistory([]);
+    pnlRef.current = 0;
+    setSessionPnl(0);
+    toast.success("Trade history cleared");
+  };
+
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-3 px-2 pb-28 sm:px-4 lg:px-8 xl:px-10">
       {/* TOP HEADER — one row */}
