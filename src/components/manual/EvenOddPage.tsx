@@ -345,6 +345,8 @@ export function EvenOddPage() {
         confidence={confidence}
         sample={total}
         tick={lastEpoch}
+        digits={digits}
+        priceUp={priceUp}
       />
       </div>
 
