@@ -572,82 +572,199 @@ function Mini({ label, value, color, pulse }: { label: string; value: string; co
 }
 
 function Thermometer({
-  pressure, momentum, edge, dominant, evenPct, oddPct, confidence, sample, tick,
+  pressure, momentum, edge, dominant, evenPct, oddPct, confidence, sample, tick, digits, priceUp,
 }: {
   pressure: number; momentum: number; edge: number;
   dominant: "EVEN" | "ODD"; evenPct: number; oddPct: number;
   confidence: number; sample: number; tick: number;
+  digits: number[]; priceUp: boolean;
 }) {
-  // pressure in [-100, 100] → needle position in [0%, 100%]
   const pos = Math.max(0, Math.min(100, 50 + pressure / 2));
   const momPos = Math.max(0, Math.min(100, 50 + momentum / 2));
-  const intensity = Math.min(1, edge / 30); // glow intensity scales with edge
+  const intensity = Math.min(1, edge / 30);
   const sideColor = dominant === "EVEN" ? GREEN : RED;
-  const glow = `0 0 ${10 + intensity * 28}px ${sideColor}`;
+  const glow = `0 0 ${12 + intensity * 36}px ${sideColor}`;
+  const trendLabel = pressure > 5 ? "BULLISH" : pressure < -5 ? "BEARISH" : "NEUTRAL";
+  const trendColor = pressure > 5 ? GREEN : pressure < -5 ? RED : "oklch(0.75 0 0)";
+
+  // mini market line — last 40 digits as parity wave
+  const wave = digits.slice(-40);
+  const waveMax = wave.length || 1;
+  const points = wave
+    .map((d, i) => {
+      const x = (i / Math.max(1, waveMax - 1)) * 100;
+      const y = d % 2 === 0 ? 30 : 70;
+      return `${x.toFixed(2)},${y}`;
+    })
+    .join(" ");
+
+  // animated flowing particles — count scales with intensity
+  const particles = useMemo(
+    () => Array.from({ length: 8 }).map((_, i) => ({
+      id: i,
+      delay: (i * 0.45).toFixed(2),
+      duration: (3.6 + (i % 3) * 0.7).toFixed(2),
+      top: 30 + ((i * 13) % 40),
+    })),
+    [],
+  );
+
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/60 p-2.5 backdrop-blur"
-         style={{ boxShadow: `inset 0 0 0 1px ${sideColor}22, 0 0 ${12 + intensity * 18}px -10px ${sideColor}` }}>
-      <div className="mb-1.5 flex items-center justify-between text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
-        <span>Live Market Thermometer</span>
+    <div
+      className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-black/80 via-black/70 to-black/60 p-3 backdrop-blur lg:p-4"
+      style={{
+        boxShadow: `inset 0 0 0 1px ${sideColor}22, 0 0 ${18 + intensity * 30}px -10px ${sideColor}`,
+      }}
+    >
+      {/* ambient halo follows the dominant side */}
+      <div
+        className="pointer-events-none absolute inset-0 transition-opacity duration-500"
+        style={{
+          background:
+            pressure >= 0
+              ? `radial-gradient(60% 100% at 100% 50%, ${GREEN}22, transparent 70%)`
+              : `radial-gradient(60% 100% at 0% 50%, ${RED}22, transparent 70%)`,
+          opacity: 0.6 + intensity * 0.4,
+        }}
+      />
+
+      <div className="relative mb-2 flex items-center justify-between text-[9px] uppercase tracking-[0.18em] text-muted-foreground lg:text-[10px]">
+        <span className="flex items-center gap-1.5">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="absolute inset-0 animate-ping rounded-full" style={{ background: sideColor, opacity: 0.7 }} />
+            <span className="relative h-1.5 w-1.5 rounded-full" style={{ background: sideColor }} />
+          </span>
+          Live Market Pressure
+        </span>
         <span>n=<span className="num text-foreground">{sample}</span></span>
       </div>
 
       {/* polarity labels */}
-      <div className="mb-1 flex items-center justify-between text-[9px] font-bold uppercase tracking-wider">
-        <span style={{ color: RED, textShadow: `0 0 8px ${RED}88` }}>◀ ODD</span>
-        <span className="text-muted-foreground">Pressure</span>
-        <span style={{ color: GREEN, textShadow: `0 0 8px ${GREEN}88` }}>EVEN ▶</span>
+      <div className="relative mb-1.5 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider lg:text-xs">
+        <span style={{ color: RED, textShadow: `0 0 10px ${RED}99` }}>◀ ODD</span>
+        <span className="text-muted-foreground/80">{trendLabel}</span>
+        <span style={{ color: GREEN, textShadow: `0 0 10px ${GREEN}99` }}>EVEN ▶</span>
       </div>
 
-      {/* the bar */}
-      <div className="relative h-4 w-full overflow-visible rounded-full border border-white/10 bg-[linear-gradient(90deg,oklch(0.4_0.16_25/0.35),oklch(0.18_0.02_240/0.4)_50%,oklch(0.4_0.18_145/0.35))]">
+      {/* the pressure bar */}
+      <div
+        className="relative h-7 w-full overflow-hidden rounded-full border border-white/10 lg:h-9"
+        style={{
+          background:
+            "linear-gradient(90deg, oklch(0.4 0.16 25 / 0.45), oklch(0.16 0.02 240 / 0.55) 50%, oklch(0.4 0.18 145 / 0.45))",
+          boxShadow: "inset 0 1px 0 oklch(1 0 0 / 0.06), inset 0 0 18px oklch(0 0 0 / 0.6)",
+        }}
+      >
+        {/* mini market flow line (SVG parity wave) */}
+        <svg className="absolute inset-0 h-full w-full opacity-50" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="flowGrad" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0%" stopColor={RED} stopOpacity="0.8" />
+              <stop offset="50%" stopColor="white" stopOpacity="0.4" />
+              <stop offset="100%" stopColor={GREEN} stopOpacity="0.8" />
+            </linearGradient>
+          </defs>
+          {wave.length > 1 && (
+            <polyline
+              points={points}
+              fill="none"
+              stroke="url(#flowGrad)"
+              strokeWidth="1.4"
+              vectorEffect="non-scaling-stroke"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+          )}
+        </svg>
+
         {/* tick marks */}
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-1">
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-1.5">
           {Array.from({ length: 11 }).map((_, i) => (
-            <span key={i} className={cn("h-1.5 w-px", i === 5 ? "h-3 bg-white/40" : "bg-white/15")} />
+            <span key={i} className={cn("w-px", i === 5 ? "h-4 bg-white/35" : "h-1.5 bg-white/15")} />
           ))}
         </div>
+
         {/* center fill from middle to needle */}
         <div
           className="absolute inset-y-0 transition-[left,width,background] duration-300 ease-out"
           style={{
             left: `${Math.min(50, pos)}%`,
             width: `${Math.abs(pos - 50)}%`,
-            background: pressure >= 0
-              ? `linear-gradient(90deg, ${GREEN}55, ${GREEN})`
-              : `linear-gradient(270deg, ${RED}55, ${RED})`,
-            boxShadow: `0 0 ${6 + intensity * 14}px ${sideColor}aa`,
-            opacity: 0.85,
+            background:
+              pressure >= 0
+                ? `linear-gradient(90deg, ${GREEN}33, ${GREEN}cc)`
+                : `linear-gradient(270deg, ${RED}33, ${RED}cc)`,
+            boxShadow: `0 0 ${10 + intensity * 22}px ${sideColor}cc`,
           }}
         />
+
+        {/* sweeping shimmer */}
+        <div
+          className="pointer-events-none absolute inset-y-0 w-1/3 animate-[scan_3.4s_linear_infinite] bg-gradient-to-r from-transparent via-white/15 to-transparent"
+          style={{ mixBlendMode: "screen" }}
+        />
+
+        {/* flowing particles */}
+        {particles.map((p) => (
+          <span
+            key={p.id}
+            className="pointer-events-none absolute h-1 w-1 rounded-full"
+            style={{
+              top: `${p.top}%`,
+              left: "-6%",
+              background: pressure >= 0 ? GREEN : RED,
+              boxShadow: `0 0 6px ${pressure >= 0 ? GREEN : RED}`,
+              animation: `flow ${p.duration}s linear ${p.delay}s infinite`,
+              opacity: 0.7,
+            }}
+          />
+        ))}
+
         {/* momentum ghost marker */}
         <div
-          className="absolute top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/40 bg-white/10 transition-[left] duration-200 ease-out"
-          style={{ left: `${momPos}%` }}
+          className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/50 bg-white/10 transition-[left] duration-200 ease-out lg:h-3 lg:w-3"
+          style={{ left: `${momPos}%`, boxShadow: "0 0 6px oklch(1 0 0 / 0.4)" }}
           title="Short-term momentum"
         />
+
         {/* main needle */}
         <div
           key={tick}
-          className="absolute top-1/2 h-6 w-[3px] -translate-x-1/2 -translate-y-1/2 rounded-full transition-[left,background,box-shadow] duration-300 ease-out"
+          className="absolute top-1/2 h-9 w-[3px] -translate-x-1/2 -translate-y-1/2 rounded-full transition-[left] duration-300 ease-out lg:h-12 lg:w-[4px]"
           style={{
             left: `${pos}%`,
-            background: sideColor,
+            background: `linear-gradient(180deg, ${sideColor}, oklch(1 0 0 / 0.6), ${sideColor})`,
             boxShadow: glow,
           }}
-        />
+        >
+          <span
+            className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full"
+            style={{ background: sideColor, boxShadow: glow }}
+          />
+          <span
+            className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full"
+            style={{ background: sideColor, boxShadow: glow }}
+          />
+        </div>
       </div>
 
-      {/* readouts */}
-      <div className="mt-2 grid grid-cols-4 gap-1.5 text-center">
+      {/* analytics readouts — 6 stats responsive */}
+      <div className="relative mt-3 grid grid-cols-3 gap-1.5 text-center md:grid-cols-6 lg:gap-2">
         <Mini label="Even" value={`${evenPct.toFixed(1)}%`} color={GREEN} />
         <Mini label="Odd" value={`${oddPct.toFixed(1)}%`} color={RED} />
-        <Mini label="AI" value={dominant} color={sideColor} pulse />
+        <Mini label="AI Signal" value={dominant} color={sideColor} pulse />
         <Mini label="Conf" value={`${confidence}%`} color={confidence >= 70 ? GREEN : confidence >= 60 ? CYAN : RED} />
+        <Mini label="Momentum" value={`${momentum >= 0 ? "+" : ""}${momentum.toFixed(0)}`} color={momentum >= 0 ? GREEN : RED} />
+        <Mini label="Trend" value={trendLabel} color={trendColor} pulse={trendLabel !== "NEUTRAL"} />
       </div>
-      <div className="mt-1.5 flex items-center justify-between px-0.5 text-[9px] uppercase tracking-wider text-muted-foreground">
+
+      <div className="relative mt-2 flex items-center justify-between px-0.5 text-[9px] uppercase tracking-wider text-muted-foreground lg:text-[10px]">
         <span>Edge <span className="num font-semibold text-foreground">{edge.toFixed(2)}%</span></span>
-        <span>Momentum <span className="num font-semibold" style={{ color: momentum >= 0 ? GREEN : RED }}>{momentum >= 0 ? "+" : ""}{momentum.toFixed(0)}</span></span>
+        <span className="flex items-center gap-1">
+          Tape
+          <span className={cn("num font-semibold", priceUp ? "text-bull" : "text-bear")}>{priceUp ? "▲" : "▼"}</span>
+        </span>
+        <span>Pressure <span className="num font-semibold" style={{ color: sideColor }}>{pressure >= 0 ? "+" : ""}{pressure.toFixed(1)}</span></span>
       </div>
     </div>
   );
