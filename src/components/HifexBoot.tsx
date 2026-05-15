@@ -3,11 +3,13 @@ import { useEffect, useState } from "react";
 const CHIPS = ["WS/LINK", "NEON/CORE", "v3+API"];
 
 export function HifexBoot() {
-  const [show, setShow] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return !sessionStorage.getItem("hifex-boot-seen");
-  });
+  const [show, setShow] = useState(false);
   const [step, setStep] = useState(0);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!sessionStorage.getItem("hifex-boot-seen")) setShow(true);
+  }, []);
 
   useEffect(() => {
     if (!show) return;
