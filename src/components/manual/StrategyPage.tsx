@@ -12,6 +12,8 @@ import { AIMomentumStrip } from "./AIMomentumStrip";
 import { TradeInputs, type TradeConfig } from "./TradeInputs";
 import { ActionButtons } from "./ActionButtons";
 import { ManualHistoryTable } from "./ManualHistoryTable";
+import { LiveTradeCard, type LiveTrade } from "./LiveTradeCard";
+import { SettlementPopup, type SettlementResult } from "./SettlementPopup";
 import { OverUnderHistogram } from "./meters/OverUnderHistogram";
 import { DigitFrequencyMatrix } from "./meters/DigitFrequencyMatrix";
 import { MarketThermometer } from "./meters/MarketThermometer";
@@ -80,6 +82,9 @@ export function StrategyPage({ id }: { id: StrategyId }) {
   const stakeRef = useRef(cfg.stake);
   const [sessionPnl, setSessionPnl] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [liveTrade, setLiveTrade] = useState<LiveTrade | null>(null);
+  const [settlement, setSettlement] = useState<SettlementResult>(null);
+  const aiEnabledRef = useRef(true);
 
   const placeOnce = async (auto = false): Promise<number | null> => {
     if (!client || !active || !user) { toast.error("Connect a Deriv account first"); return null; }
@@ -112,8 +117,48 @@ export function StrategyPage({ id }: { id: StrategyId }) {
         status: "open",
       }).select().single();
 
-      const settled = await client.waitForContract(buy.contract_id);
+      setLiveTrade({
+        contract_id: buy.contract_id,
+        contract_type: contract,
+        stake: amount,
+        entry_spot: null,
+        current_spot: null,
+        exit_spot: null,
+        profit: null,
+        status: "open",
+      });
+
+      const settled = await client.waitForContract(buy.contract_id, (c: any) => {
+        setLiveTrade((prev) => prev && {
+          ...prev,
+          entry_spot: c.entry_spot ?? prev.entry_spot,
+          current_spot: c.current_spot ?? c.entry_spot ?? prev.current_spot,
+          exit_spot: c.exit_spot ?? prev.exit_spot,
+          profit: c.profit ?? prev.profit,
+        });
+      });
       const profit = Number(settled.profit ?? 0);
+      const status: LiveTrade["status"] = profit > 0 ? "won" : profit < 0 ? "lost" : "even";
+      setLiveTrade({
+        contract_id: buy.contract_id,
+        contract_type: contract,
+        stake: amount,
+        entry_spot: settled.entry_spot ?? null,
+        current_spot: settled.exit_spot ?? null,
+        exit_spot: settled.exit_spot ?? null,
+        profit,
+        status,
+      });
+      setSettlement({
+        profit,
+        contract_type: contract,
+        stake: amount,
+        entry_spot: settled.entry_spot ?? null,
+        exit_spot: settled.exit_spot ?? null,
+        currency: balance?.currency,
+      });
+      // clear the live card after a brief moment so history remains the source of truth
+      setTimeout(() => setLiveTrade((cur) => (cur && cur.contract_id === buy.contract_id ? null : cur)), 4000);
       if (trade) {
         await supabase.from("trades").update({
           profit, payout: settled.payout,
@@ -122,7 +167,6 @@ export function StrategyPage({ id }: { id: StrategyId }) {
           closed_at: new Date().toISOString(), raw: settled,
         }).eq("id", trade.id);
       }
-      toast[profit >= 0 ? "success" : "error"](`${profit >= 0 ? "+" : ""}${profit.toFixed(2)} ${balance?.currency || ""}`);
       return profit;
     } catch (e: any) {
       toast.error(e.message || e.error?.message || "Trade failed");
@@ -132,8 +176,9 @@ export function StrategyPage({ id }: { id: StrategyId }) {
     }
   };
 
-  const startLoop = async () => {
+  const startLoop = async (useAi = true) => {
     if (runningRef.current) return;
+    aiEnabledRef.current = useAi;
     runningRef.current = true; setRunning(true);
     sessionPnlRef.current = 0; setSessionPnl(0);
     stakeRef.current = cfg.stake;
@@ -161,8 +206,8 @@ export function StrategyPage({ id }: { id: StrategyId }) {
       } else {
         stakeRef.current = cfg.stake;
       }
-      // safe-mode pause between trades
-      if (safeMode) await new Promise((r) => setTimeout(r, 1500));
+      // safe-mode or non-AI pause between trades
+      if (safeMode || !aiEnabledRef.current) await new Promise((r) => setTimeout(r, 1500));
     }
     runningRef.current = false; setRunning(false);
   };
@@ -290,17 +335,23 @@ export function StrategyPage({ id }: { id: StrategyId }) {
             <div className="mt-3">
               <ActionButtons running={running} safeMode={safeMode} disabled={busy && !running}
                              tradeBusy={busy}
-                             onStart={startLoop} onStop={stopLoop} onSafe={() => setSafeMode((s) => !s)}
+                             paused={paused}
+                             onStart={() => (paused ? resumeLoop() : startLoop(true))}
+                             onStartManual={() => startLoop(false)}
+                             onPause={pauseLoop}
+                             onStop={stopLoop} onSafe={() => setSafeMode((s) => !s)}
                              onTradeNow={() => placeOnce(false)} />
             </div>
             {!active && <p className="mt-2 text-[11px] text-bear">Connect a Deriv account in Settings to trade.</p>}
           </div>
+          <LiveTradeCard trade={liveTrade} />
         </div>
       </div>
 
       {/* AI momentum + history */}
       <AIMomentumStrip symbol={symbol} />
       <ManualHistoryTable contractTypes={meta.contracts} />
+      <SettlementPopup result={settlement} onClose={() => setSettlement(null)} />
     </div>
   );
 }

@@ -1,13 +1,14 @@
-import { Play, Square, ShieldCheck, Zap } from "lucide-react";
+import { Play, Pause, Square, ShieldCheck, Zap, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function ActionButtons({
-  running, safeMode, onStart, onStop, onSafe, onTradeNow, disabled, tradeBusy,
+  running, paused, safeMode, onStart, onStartManual, onPause, onStop, onSafe, onTradeNow, disabled, tradeBusy,
 }: {
-  running: boolean; safeMode: boolean; disabled?: boolean;
+  running: boolean; paused?: boolean; safeMode: boolean; disabled?: boolean;
   tradeBusy?: boolean;
-  onStart: () => void; onStop: () => void; onSafe: () => void; onTradeNow?: () => void;
+  onStart: () => void; onStartManual?: () => void; onPause?: () => void;
+  onStop: () => void; onSafe: () => void; onTradeNow?: () => void;
 }) {
   return (
     <div className="space-y-2.5">
@@ -21,6 +22,28 @@ export function ActionButtons({
           <Zap className="h-4 w-4" /> <span className="relative z-[2]">{tradeBusy ? "Placing trade…" : "Trade Now"}</span>
         </Button>
       )}
+    {onStartManual && (
+      <div className="grid grid-cols-2 gap-2.5">
+        <Button onClick={onStartManual} disabled={disabled || running} size="lg"
+                className={cn(
+                  "risk-btn h-12 rounded-full text-sm font-bold uppercase tracking-wider transition-all",
+                  "bg-gradient-to-r from-[var(--meter-bull)] to-emerald-500 text-bull-foreground hover:opacity-95 hover:scale-[1.02]",
+                  !running && "btn-glow-green is-live"
+                )}>
+          <Rocket className="h-4 w-4" /> <span className="relative z-[2]">Start Trading</span>
+        </Button>
+        <Button onClick={paused ? onStart : onPause} disabled={!running} size="lg"
+                className={cn(
+                  "risk-btn h-12 rounded-full text-sm font-bold uppercase tracking-wider transition-all",
+                  paused
+                    ? "bg-gradient-to-r from-warning to-amber-500 text-black hover:opacity-95 hover:scale-[1.02]"
+                    : "bg-gradient-to-r from-bear to-rose-600 text-white hover:opacity-95 hover:scale-[1.02]",
+                  running && "btn-glow-red is-live"
+                )}>
+          <Pause className="h-4 w-4" /> <span className="relative z-[2]">{paused ? "Resume" : "Pause"}</span>
+        </Button>
+      </div>
+    )}
     <div className="grid grid-cols-3 gap-2.5">
       <Button onClick={onStart} disabled={disabled || running} size="lg"
               className={cn(
