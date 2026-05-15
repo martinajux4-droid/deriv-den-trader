@@ -17,12 +17,9 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { toast } from "sonner";
 import { AlertTriangle, Settings2, ChevronDown, Brain, TrendingUp, Hash, Sigma, Shuffle, Zap, Sparkles } from "lucide-react";
 import { setBotStatus, emitBotEvent, emitTakeProfit } from "@/hooks/use-bot-status";
-import { LiveTradeFeed } from "@/components/LiveTradeFeed";
 import { BotLaunchOverlay } from "@/components/BotLaunchOverlay";
 import { BotCommandCenter } from "@/components/BotCommandCenter";
-import { AIMarketScanner } from "@/components/AIMarketScanner";
 import { RiskManagementSetup, assessRisk, type RiskValues } from "@/components/RiskManagementSetup";
-import { ActiveTradeMonitor } from "@/components/ActiveTradeMonitor";
 import { cn } from "@/lib/utils";
 import { playBoot, playExecute, playProfit, playLoss, startScanLoop, stopScanLoop, primeAudio } from "@/lib/audio-engine";
 
@@ -361,9 +358,6 @@ function BotPage() {
         onEmergency={emergency}
       />
 
-      {/* ACTIVE TRADE MONITOR — institutional entry/exit tracking */}
-      <ActiveTradeMonitor />
-
       {/* TWO-COLUMN: settings (collapsible) + live feed */}
       <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
         {/* LEFT: configuration */}
@@ -525,20 +519,6 @@ function BotPage() {
 
         {/* RIGHT: live activity */}
         <div className="space-y-4">
-          <AIMarketScanner
-            activeSymbol={symbol}
-            minConfidence={Number(minConfidence) || 70}
-            running={running}
-            onSelectMarket={(s) => {
-              if (running) {
-                toast.message(`AI suggests switching to ${s} — stop the bot to change market`);
-                return;
-              }
-              setSymbol(s);
-              toast.success(`Switched to ${s} · stronger momentum detected`);
-            }}
-          />
-
           <div className="card-premium overflow-hidden p-5">
             <div className="mb-3 flex items-center gap-2">
               <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent/15 text-accent">
@@ -570,8 +550,6 @@ function BotPage() {
               </div>
             )}
           </div>
-
-          <LiveTradeFeed />
         </div>
       </div>
     </div>
