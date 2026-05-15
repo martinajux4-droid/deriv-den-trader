@@ -128,7 +128,18 @@ export function EvenOddPage() {
   useEffect(() => () => { runningRef.current = false; }, []);
 
   // analytics
-  const digits = useMemo(() => ticks.map((t) => lastDigit(t.quote)), [ticks]);
+  // Start counting from the moment the page loads / symbol changes, so the
+  // bottles fill up live with the real market — instead of being pre-seeded
+  // with 100 historical ticks (which makes them look static near 50/50).
+  const sessionStartEpochRef = useRef<number>(Math.floor(Date.now() / 1000));
+  useEffect(() => {
+    sessionStartEpochRef.current = Math.floor(Date.now() / 1000);
+  }, [symbol]);
+  const liveTicks = useMemo(
+    () => ticks.filter((t) => t.epoch >= sessionStartEpochRef.current),
+    [ticks],
+  );
+  const digits = useMemo(() => liveTicks.map((t) => lastDigit(t.quote)), [liveTicks]);
   const total = digits.length || 1;
   const evenCount = digits.filter((d) => d % 2 === 0).length;
   const evenPct = (evenCount / total) * 100;
