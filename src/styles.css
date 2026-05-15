@@ -569,17 +569,17 @@
 /* Per-strategy theme variants — override base aurora & glow colors */
 .risk-panel-evenodd {
   background:
-    radial-gradient(120% 80% at 0% 0%,   oklch(0.6 0.2 250 / 0.22), transparent 55%),
-    radial-gradient(120% 80% at 100% 0%, oklch(0.65 0.22 25 / 0.18), transparent 55%),
-    radial-gradient(120% 80% at 50% 120%,oklch(0.55 0.18 280 / 0.14), transparent 55%),
-    linear-gradient(180deg, oklch(0.11 0.03 265), oklch(0.06 0.02 260));
+    radial-gradient(120% 80% at 0% 0%,   oklch(0.78 0.2 145 / 0.24), transparent 55%),
+    radial-gradient(120% 80% at 100% 0%, oklch(0.5 0.05 240 / 0.18),  transparent 55%),
+    radial-gradient(120% 80% at 50% 120%,oklch(0.78 0.2 145 / 0.12),  transparent 55%),
+    linear-gradient(180deg, oklch(0.09 0.02 150), oklch(0.05 0.01 240));
 }
 .risk-panel-evenodd::before {
   background: conic-gradient(from 0deg,
     transparent 0deg,
-    oklch(0.6 0.2 250 / 0.28) 60deg,
+    oklch(0.78 0.2 145 / 0.32) 60deg,
     transparent 140deg,
-    oklch(0.7 0.22 25 / 0.22) 220deg,
+    oklch(0.45 0.05 240 / 0.22) 220deg,
     transparent 300deg);
 }
 
