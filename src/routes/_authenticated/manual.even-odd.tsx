@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { EvenOddPage } from "@/components/manual/EvenOddPage";
+import { StrategyPage } from "@/components/manual/StrategyPage";
 
 export const Route = createFileRoute("/_authenticated/manual/even-odd")({
-  component: EvenOddPage,
+  component: () => <StrategyPage id="even-odd" />,
 });
