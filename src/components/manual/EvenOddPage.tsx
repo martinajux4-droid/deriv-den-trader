@@ -183,9 +183,9 @@ export function EvenOddPage() {
   const upd = <K extends keyof Cfg>(k: K, v: Cfg[K]) => setCfg((c) => ({ ...c, [k]: v }));
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-2.5 px-2 pb-28 sm:max-w-lg sm:px-3">
+    <div className="mx-auto w-full max-w-[1500px] space-y-3 px-2 pb-28 sm:px-4 lg:px-6">
       {/* TOP HEADER — one row */}
-      <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-black/60 p-2 backdrop-blur">
+      <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-black/60 p-2 backdrop-blur lg:gap-3 lg:p-3">
         <Link to="/manual" className="grid h-8 w-8 flex-none place-items-center rounded-lg border border-white/10 bg-white/[0.03] text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-3.5 w-3.5" />
         </Link>
@@ -229,21 +229,26 @@ export function EvenOddPage() {
       {/* Symbol picker — slim */}
       <div className="flex items-center gap-2">
         <Select value={symbol} onValueChange={setSymbol}>
-          <SelectTrigger className="h-8 flex-1 rounded-xl border-white/10 bg-black/60 px-2.5 text-xs">
+          <SelectTrigger className="h-8 flex-1 rounded-xl border-white/10 bg-black/60 px-2.5 text-xs lg:h-10 lg:text-sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {DERIV_SYMBOLS.map((s) => <SelectItem key={s.symbol} value={s.symbol}>{s.name}</SelectItem>)}
           </SelectContent>
         </Select>
-        <div className={cn("rounded-full border px-2 py-1 text-[9px] font-semibold uppercase tracking-wider",
+        <div className={cn("rounded-full border px-2 py-1 text-[9px] font-semibold uppercase tracking-wider lg:px-3 lg:py-1.5 lg:text-[11px]",
           running ? "border-bull/40 bg-bull/10 text-bull" : "border-white/10 text-muted-foreground")}>
           {running ? (paused ? "Paused" : "Live") : "Idle"}
         </div>
       </div>
 
-      {/* EVEN/ODD glowing segmented selector — sticky */}
-      <div className="sticky top-2 z-30">
+      {/* RESPONSIVE GRID — single column on mobile, 12-col terminal on desktop */}
+      <div className="grid gap-3 lg:grid-cols-12">
+
+      {/* LEFT COLUMN — selector + price + digits + thermometer */}
+      <div className="space-y-3 lg:col-span-8">
+      {/* EVEN/ODD glowing segmented selector */}
+      <div className="lg:sticky lg:top-2 lg:z-30">
         <div className="grid grid-cols-2 gap-1 rounded-2xl border border-white/10 bg-black/70 p-1 backdrop-blur-xl"
              style={{ boxShadow: `0 6px 22px -10px ${direction === 0 ? GREEN : RED}` }}>
           {(["EVEN", "ODD"] as const).map((lbl, i) => {
@@ -252,7 +257,7 @@ export function EvenOddPage() {
             return (
               <button key={lbl} onClick={() => setDirection(i as 0 | 1)}
                 className={cn(
-                  "relative rounded-xl py-2 text-xs font-bold uppercase tracking-[0.22em] transition-all",
+                  "relative rounded-xl py-2 text-xs font-bold uppercase tracking-[0.22em] transition-all lg:py-3 lg:text-sm",
                   active ? "scale-[1.01] animate-pulse" : "text-muted-foreground hover:text-foreground",
                 )}
                 style={active ? {
@@ -274,25 +279,25 @@ export function EvenOddPage() {
       </div>
 
       {/* LIVE PRICE — compact */}
-      <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-black/70 to-black/40 px-3 py-2"
+      <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-black/70 to-black/40 px-3 py-2 lg:px-5 lg:py-4"
            style={{ borderColor: "oklch(0.78 0.2 145 / 0.3)", boxShadow: `0 0 22px -10px ${GREEN}88` }}>
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 lg:gap-6">
           <div className="flex items-center gap-2">
             <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inset-0 animate-ping rounded-full" style={{ background: GREEN, opacity: 0.7 }} />
               <span className="relative h-1.5 w-1.5 rounded-full" style={{ background: GREEN }} />
             </span>
             <div>
-              <div className="text-[8px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Live · {symbol}</div>
-              <div className="text-[10px] text-muted-foreground">Last <span className="num font-bold" style={{ color: last % 2 === 0 ? GREEN : RED, textShadow: `0 0 8px ${last % 2 === 0 ? GREEN : RED}88` }}>{last}</span></div>
+              <div className="text-[8px] font-semibold uppercase tracking-[0.22em] text-muted-foreground lg:text-[10px]">Live · {symbol}</div>
+              <div className="text-[10px] text-muted-foreground lg:text-xs">Last <span className="num font-bold" style={{ color: last % 2 === 0 ? GREEN : RED, textShadow: `0 0 8px ${last % 2 === 0 ? GREEN : RED}88` }}>{last}</span></div>
             </div>
           </div>
           <div className="text-right">
-            <div key={lastEpoch} className="num text-lg font-bold tabular-nums leading-none"
+            <div key={lastEpoch} className="num text-lg font-bold tabular-nums leading-none lg:text-3xl"
                  style={{ color: priceUp ? GREEN : RED, textShadow: `0 0 14px ${priceUp ? GREEN + "99" : RED + "99"}` }}>
               {animatedPrice ? animatedPrice.toFixed(3) : "--"}
             </div>
-            <div className={cn("text-[9px] font-semibold num", priceUp ? "text-bull" : "text-bear")}>
+            <div className={cn("text-[9px] font-semibold num lg:text-xs", priceUp ? "text-bull" : "text-bear")}>
               {priceUp ? "▲" : "▼"} {priceUp ? "up" : "down"}
             </div>
           </div>
@@ -300,14 +305,14 @@ export function EvenOddPage() {
       </div>
 
       {/* DIGITS STRIP — small bubbles */}
-      <div className="rounded-2xl border border-white/10 bg-black/50 p-1.5 backdrop-blur">
-        <div ref={stripRef} className="flex gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="rounded-2xl border border-white/10 bg-black/50 p-1.5 backdrop-blur lg:p-3">
+        <div ref={stripRef} className="flex gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] lg:gap-1.5 [&::-webkit-scrollbar]:hidden">
           {recent.map((d, i) => {
             const isEven = d % 2 === 0;
             const isLast = i === recent.length - 1;
             return (
               <div key={`${i}-${d}-${lastEpoch}`}
-                className={cn("grid h-5 w-5 flex-none place-items-center rounded-full border text-[9px] font-bold num", isLast && "scale-110")}
+                className={cn("grid h-5 w-5 flex-none place-items-center rounded-full border text-[9px] font-bold num lg:h-7 lg:w-7 lg:text-[11px]", isLast && "scale-110")}
                 style={isEven ? {
                   background: `radial-gradient(circle at 30% 30%, ${GREEN}, oklch(0.45 0.18 145))`,
                   borderColor: GREEN, color: "oklch(0.12 0.04 145)",
@@ -336,13 +341,17 @@ export function EvenOddPage() {
         sample={total}
         tick={lastEpoch}
       />
+      </div>
+
+      {/* RIGHT COLUMN — risk + controls + manual */}
+      <div className="space-y-3 lg:col-span-4">
 
       {/* RISK CONTROL PANEL — compact grid */}
-      <div className="rounded-2xl border border-white/10 bg-black/60 p-2.5 backdrop-blur"
+      <div className="rounded-2xl border border-white/10 bg-black/60 p-2.5 backdrop-blur lg:p-4"
            style={{ boxShadow: `inset 0 0 0 1px ${GREEN}22, 0 0 24px -14px ${GREEN}` }}>
         <div className="mb-2 flex items-center justify-between">
-          <div className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">Risk Control</div>
-          <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          <div className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground lg:text-[11px]">Risk Control</div>
+          <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground lg:text-xs">
             Auto trade
             <button onClick={() => upd("autoTrade", !cfg.autoTrade)}
               className={cn("relative h-4 w-7 rounded-full border transition", cfg.autoTrade ? "border-transparent" : "border-white/20 bg-white/[0.04]")}
@@ -351,7 +360,7 @@ export function EvenOddPage() {
             </button>
           </label>
         </div>
-        <div className="grid grid-cols-3 gap-1.5">
+        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:gap-2">
           <NumField label="Stake" value={cfg.stake} onChange={(v) => upd("stake", v)} step={0.5} min={0.35} />
           <NumField label="Take Profit" value={cfg.takeProfit} onChange={(v) => upd("takeProfit", v)} step={1} />
           <NumField label="Max Loss" value={cfg.maxLoss} onChange={(v) => upd("maxLoss", v)} step={1} />
@@ -367,8 +376,8 @@ export function EvenOddPage() {
       </div>
 
       {/* TRADING CONTROLS */}
-      <div className="space-y-1.5">
-        <div className="grid grid-cols-3 gap-1.5">
+      <div className="space-y-1.5 lg:space-y-2">
+        <div className="grid grid-cols-3 gap-1.5 lg:gap-2">
           <CtrlBtn
             onClick={() => (paused ? resumeLoop() : startLoop())}
             disabled={running && !paused}
@@ -399,14 +408,14 @@ export function EvenOddPage() {
       </div>
 
       {/* MANUAL MODE */}
-      <div className="rounded-2xl border border-white/10 bg-black/60 p-2.5 backdrop-blur">
+      <div className="rounded-2xl border border-white/10 bg-black/60 p-2.5 backdrop-blur lg:p-4">
         <div className="mb-2 flex items-center justify-between">
-          <div className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">Manual Mode</div>
-          <span className="text-[9px] text-muted-foreground">Single shot</span>
+          <div className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground lg:text-[11px]">Manual Mode</div>
+          <span className="text-[9px] text-muted-foreground lg:text-[11px]">Single shot</span>
         </div>
-        <div className="grid grid-cols-2 gap-1.5">
+        <div className="grid grid-cols-2 gap-1.5 lg:gap-2">
           <button onClick={() => placeOnce(false, 0)} disabled={busy}
-            className="rounded-xl border py-2 text-xs font-bold uppercase tracking-[0.18em] transition hover:scale-[1.01] disabled:opacity-50"
+            className="rounded-xl border py-2 text-xs font-bold uppercase tracking-[0.18em] transition hover:scale-[1.01] disabled:opacity-50 lg:py-3 lg:text-sm"
             style={{
               borderColor: `${GREEN}55`, color: GREEN,
               background: `linear-gradient(180deg, ${GREEN_SOFT}, transparent)`,
@@ -414,7 +423,7 @@ export function EvenOddPage() {
               textShadow: `0 0 8px ${GREEN}88`,
             }}>EVEN</button>
           <button onClick={() => placeOnce(false, 1)} disabled={busy}
-            className="rounded-xl border py-2 text-xs font-bold uppercase tracking-[0.18em] transition hover:scale-[1.01] disabled:opacity-50"
+            className="rounded-xl border py-2 text-xs font-bold uppercase tracking-[0.18em] transition hover:scale-[1.01] disabled:opacity-50 lg:py-3 lg:text-sm"
             style={{
               borderColor: `${RED}66`, color: RED,
               background: `linear-gradient(180deg, ${RED_SOFT}, transparent)`,
@@ -423,22 +432,24 @@ export function EvenOddPage() {
             }}>ODD</button>
         </div>
       </div>
+      </div>
+      </div>
 
-      {/* TRADE HISTORY — compact */}
-      <div className="rounded-2xl border border-white/10 bg-black/60 p-2 backdrop-blur">
-        <div className="mb-1 flex items-center justify-between px-1 text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+      {/* TRADE HISTORY — full width across grid */}
+      <div className="rounded-2xl border border-white/10 bg-black/60 p-2 backdrop-blur lg:p-4">
+        <div className="mb-1 flex items-center justify-between px-1 text-[9px] uppercase tracking-[0.2em] text-muted-foreground lg:text-[11px]">
           <span>Recent Trades</span>
           <span>Last 8</span>
         </div>
         <div className="overflow-hidden rounded-lg border border-white/5">
-          <table className="w-full text-[10px]">
+          <table className="w-full text-[10px] lg:text-sm">
             <thead className="bg-white/[0.03] text-muted-foreground">
               <tr>
-                <th className="px-1.5 py-1 text-left font-medium uppercase tracking-wider">Type</th>
-                <th className="px-1.5 py-1 text-right font-medium uppercase tracking-wider">Stake</th>
-                <th className="px-1.5 py-1 text-right font-medium uppercase tracking-wider">Entry</th>
-                <th className="px-1.5 py-1 text-right font-medium uppercase tracking-wider">Exit</th>
-                <th className="px-1.5 py-1 text-right font-medium uppercase tracking-wider">P/L</th>
+                <th className="px-1.5 py-1 text-left font-medium uppercase tracking-wider lg:px-3 lg:py-2">Type</th>
+                <th className="px-1.5 py-1 text-right font-medium uppercase tracking-wider lg:px-3 lg:py-2">Stake</th>
+                <th className="px-1.5 py-1 text-right font-medium uppercase tracking-wider lg:px-3 lg:py-2">Entry</th>
+                <th className="px-1.5 py-1 text-right font-medium uppercase tracking-wider lg:px-3 lg:py-2">Exit</th>
+                <th className="px-1.5 py-1 text-right font-medium uppercase tracking-wider lg:px-3 lg:py-2">P/L</th>
               </tr>
             </thead>
             <tbody>
@@ -450,11 +461,11 @@ export function EvenOddPage() {
                 const won = (t.profit ?? 0) > 0;
                 return (
                   <tr key={t.id} className="border-t border-white/5">
-                    <td className="px-1.5 py-1 font-semibold" style={{ color: isEven ? GREEN : RED, textShadow: `0 0 6px ${isEven ? GREEN : RED}66` }}>{isEven ? "E" : "O"}</td>
-                    <td className="num px-1.5 py-1 text-right">{t.stake.toFixed(2)}</td>
-                    <td className="num px-1.5 py-1 text-right text-muted-foreground">{t.entry_spot?.toFixed(3) ?? "—"}</td>
-                    <td className="num px-1.5 py-1 text-right text-muted-foreground">{t.exit_spot?.toFixed(3) ?? "—"}</td>
-                    <td className={cn("num px-1.5 py-1 text-right font-bold", won ? "text-bull" : (t.profit ?? 0) < 0 ? "text-bear" : "text-muted-foreground")}>
+                    <td className="px-1.5 py-1 font-semibold lg:px-3 lg:py-2" style={{ color: isEven ? GREEN : RED, textShadow: `0 0 6px ${isEven ? GREEN : RED}66` }}>{isEven ? "E" : "O"}</td>
+                    <td className="num px-1.5 py-1 text-right lg:px-3 lg:py-2">{t.stake.toFixed(2)}</td>
+                    <td className="num px-1.5 py-1 text-right text-muted-foreground lg:px-3 lg:py-2">{t.entry_spot?.toFixed(3) ?? "—"}</td>
+                    <td className="num px-1.5 py-1 text-right text-muted-foreground lg:px-3 lg:py-2">{t.exit_spot?.toFixed(3) ?? "—"}</td>
+                    <td className={cn("num px-1.5 py-1 text-right font-bold lg:px-3 lg:py-2", won ? "text-bull" : (t.profit ?? 0) < 0 ? "text-bear" : "text-muted-foreground")}>
                       {t.profit == null ? "…" : `${won ? "+" : ""}${t.profit.toFixed(2)}`}
                     </td>
                   </tr>
