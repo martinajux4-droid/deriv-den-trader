@@ -4,6 +4,7 @@ import appCss from "../styles.css?url";
 import { AuthProvider } from "@/hooks/use-auth";
 import { DerivProvider } from "@/hooks/use-deriv";
 import { Toaster } from "@/components/ui/sonner";
+import { HifexBoot } from "@/components/HifexBoot";
 
 function NotFoundComponent() {
   return (
@@ -72,6 +73,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <DerivProvider>
+          <HifexBoot />
           <Outlet />
           <Toaster richColors theme="dark" />
         </DerivProvider>
