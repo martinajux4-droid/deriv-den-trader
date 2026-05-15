@@ -105,6 +105,30 @@
     backdrop-filter: blur(14px);
     border: 1px solid oklch(1 0 0 / 0.08);
   }
+  /* ===== HIFEX PRO global ambient ===== */
+  body {
+    background-color: oklch(0.08 0.02 150);
+    background-image:
+      radial-gradient(60% 40% at 50% 0%, oklch(0.60 0.25 142 / 0.12), transparent 70%),
+      radial-gradient(70% 60% at 50% 100%, oklch(0.50 0.22 145 / 0.10), transparent 70%),
+      linear-gradient(oklch(0.86 0.27 142 / 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(0.86 0.27 142 / 0.05) 1px, transparent 1px);
+    background-size: auto, auto, 44px 44px, 44px 44px;
+    background-attachment: fixed;
+  }
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(circle at 50% 60%, oklch(0.60 0.28 142 / 0.10), transparent 55%);
+    mix-blend-mode: screen;
+    animation: hifex-ambient 8s ease-in-out infinite;
+  }
+  @keyframes hifex-ambient {
+    0%, 100% { opacity: 0.55; }
+    50%      { opacity: 0.95; }
+  }
   .text-gold { color: oklch(0.86 0.14 90); }
   .bg-gold-gradient { background: var(--gradient-gold); }
   .bg-blue-gradient { background: var(--gradient-blue); }
