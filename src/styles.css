@@ -765,3 +765,18 @@
   animation: risk-scan-line 4.5s ease-in-out infinite;
   pointer-events: none;
 }
+
+@keyframes flow {
+  0%   { transform: translateX(0);     opacity: 0; }
+  10%  { opacity: 0.9; }
+  90%  { opacity: 0.9; }
+  100% { transform: translateX(2400%); opacity: 0; }
+}
+@keyframes scan {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-\[flow_3\.4s_linear_infinite\],
+  .animate-\[scan_3\.4s_linear_infinite\] { animation: none !important; }
+}
