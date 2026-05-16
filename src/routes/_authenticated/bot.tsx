@@ -298,25 +298,6 @@ function BotPage() {
 
   useEffect(() => () => { runnerRef.current?.stop("Page closed"); stopScanLoop(); }, []);
 
-  // Auto pause/resume based on multi-market scanner confidence:
-  //  < 58%  → pause (market weakening), finish any active trade
-  //  ≥ 61%  → resume if we were the ones who paused
-  useEffect(() => {
-    if (!running || !runnerRef.current || !bestSignal) return;
-    const r = runnerRef.current;
-    if (!paused && bestSignal.confidence < 58) {
-      autoPausedRef.current = true;
-      r.pause();
-      setPaused(true);
-      toast.warning(`AI paused · ${bestSignal.name} ${bestSignal.confidence}% · waiting for confirmation`);
-    } else if (paused && autoPausedRef.current && bestSignal.confidence >= 61) {
-      autoPausedRef.current = false;
-      r.resume();
-      setPaused(false);
-      toast.success(`AI resumed · ${bestSignal.name} ${bestSignal.confidence}% confidence`);
-    }
-  }, [bestSignal, running, paused]);
-
   // Allow the TP modal "Stop Bot" button to stop the bot from anywhere
   useEffect(() => {
     const onStop = () => runnerRef.current?.stop("Stopped from celebration");
