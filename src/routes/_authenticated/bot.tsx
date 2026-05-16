@@ -406,6 +406,17 @@ function BotPage() {
           onPause={togglePause}
           onResume={togglePause}
           sellAfterTicks={Math.max(1, Number(ticks) || 1)}
+          onBotStop={stop}
+          onSettlement={(r) => {
+            setSettlement({
+              profit: r.profit,
+              contract_type: r.contract_type,
+              stake: r.stake,
+              entry_spot: r.entry_spot,
+              exit_spot: r.exit_spot,
+              currency: r.currency,
+            });
+          }}
         />
       )}
 
