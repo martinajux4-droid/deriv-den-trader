@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
-import { Brain, TrendingUp, TrendingDown, Activity, Gauge, Pause, Play, Square, Zap, Sparkles, Shield, Lock, ShieldCheck, AlertTriangle, Radar } from "lucide-react";
+import { Brain, Pause, Square, Zap, Sparkles, Shield, Lock, ShieldCheck, AlertTriangle, Radar } from "lucide-react";
 import type { Analysis } from "@/lib/ai-analysis";
 import type { BotState } from "@/lib/bot-engine";
 import { Button } from "@/components/ui/button";
 import { useAnimatedNumber } from "@/hooks/use-animated-number";
-import { LiveTradeRail } from "@/components/LiveTradeRail";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -47,7 +46,6 @@ const STATE_LABEL: Record<BotState, string> = {
 
 export function BotCommandCenter(p: Props) {
   const animatedPnl = useAnimatedNumber(p.pnl);
-  const animatedConf = useAnimatedNumber(p.analysis?.confidence ?? 0);
   const winRate = p.trades > 0 ? Math.round((p.wins / p.trades) * 100) : 0;
   const tone = p.pnl > 0 ? "bull" : p.pnl < 0 ? "bear" : "neutral";
 
@@ -91,12 +89,12 @@ export function BotCommandCenter(p: Props) {
           <div>
             <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Live profit</div>
             <div className={cn(
-              "num mt-1 text-5xl font-semibold tracking-tight sm:text-6xl",
+              "num mt-1 text-2xl font-semibold tracking-tight sm:text-3xl",
               tone === "bull" && "text-bull",
               tone === "bear" && "text-bear",
               tone === "neutral" && "text-foreground",
             )}>
-              {animatedPnl >= 0 ? "+" : ""}{animatedPnl.toFixed(2)} <span className="text-base text-muted-foreground">{p.currency}</span>
+              {animatedPnl >= 0 ? "+" : ""}{animatedPnl.toFixed(2)} <span className="text-xs text-muted-foreground">{p.currency}</span>
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
               <span>{p.strategyLabel} · {p.symbol}</span>
@@ -170,26 +168,6 @@ export function BotCommandCenter(p: Props) {
           />
           <ProtectionChip icon={<Brain className="h-3.5 w-3.5" />} label="AI Defense" value="ENABLED" tone="primary" pulse />
         </div>
-      )}
-
-      {/* AI READ */}
-      <div className="relative mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Metric icon={<Brain className="h-3.5 w-3.5" />} label="AI Confidence"
-          value={p.analysis ? `${Math.round(animatedConf)}%` : "—"} bar={p.analysis?.confidence} tone="primary" />
-        <Metric icon={<Gauge className="h-3.5 w-3.5" />} label="Direction"
-          value={p.analysis ? p.analysis.recommendation : "—"}
-          tone={p.analysis?.recommendation === "RISE" ? "bull" : p.analysis?.recommendation === "FALL" ? "bear" : "muted"}
-          rightIcon={p.analysis?.recommendation === "RISE" ? <TrendingUp className="h-4 w-4 text-bull"/> :
-                     p.analysis?.recommendation === "FALL" ? <TrendingDown className="h-4 w-4 text-bear"/> : null} />
-        <Metric icon={<Activity className="h-3.5 w-3.5" />} label="Entry Quality"
-          value={p.analysis ? `${p.analysis.entryScore}%` : "—"} bar={p.analysis?.entryScore} tone="accent" />
-        <Metric icon={<Shield className="h-3.5 w-3.5" />} label="Risk Score"
-          value={p.analysis ? `${p.analysis.riskScore}%` : "—"} bar={p.analysis?.riskScore} tone="warn" />
-      </div>
-
-      {/* LIVE TRADE RAIL — entry · current · target · timer · status */}
-      {(p.running || p.activeTrades > 0) && (
-        <LiveTradeRail running={p.running} confidence={p.analysis?.confidence} />
       )}
 
       {/* High-signal banner */}
