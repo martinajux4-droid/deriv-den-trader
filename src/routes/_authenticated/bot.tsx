@@ -19,7 +19,6 @@ import { AlertTriangle, Settings2, ChevronDown, Brain, TrendingUp, Hash, Sigma, 
 import { setBotStatus, emitBotEvent, emitTakeProfit } from "@/hooks/use-bot-status";
 import { BotLaunchOverlay } from "@/components/BotLaunchOverlay";
 import { BotCommandCenter } from "@/components/BotCommandCenter";
-import { RiskManagementSetup, assessRisk, type RiskValues } from "@/components/RiskManagementSetup";
 import { cn } from "@/lib/utils";
 import { playBoot, playExecute, playProfit, playLoss, startScanLoop, stopScanLoop, primeAudio } from "@/lib/audio-engine";
 
@@ -83,33 +82,11 @@ function BotPage() {
 
   const meta = useMemo(() => STRATEGIES.find((s) => s.id === strategy)!, [strategy]);
 
-  const riskValues: RiskValues = {
-    stake, takeProfit: tp, stopLoss: sl, maxTrades, riskMode, minConfidence,
-    dailyLossLimit, maxConsecLosses,
-  };
-  const assessment = useMemo(
-    () => assessRisk(riskValues, balance?.balance),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [stake, tp, sl, maxTrades, riskMode, minConfidence, dailyLossLimit, maxConsecLosses, balance?.balance],
-  );
-
-  const onRiskChange = (patch: Partial<RiskValues>) => {
-    if (patch.stake !== undefined) setStake(patch.stake);
-    if (patch.takeProfit !== undefined) setTp(patch.takeProfit);
-    if (patch.stopLoss !== undefined) setSl(patch.stopLoss);
-    if (patch.maxTrades !== undefined) setMaxTrades(patch.maxTrades);
-    if (patch.riskMode !== undefined) setRiskMode(patch.riskMode);
-    if (patch.minConfidence !== undefined) setMinConfidence(patch.minConfidence);
-    if (patch.dailyLossLimit !== undefined) setDailyLossLimit(patch.dailyLossLimit);
-    if (patch.maxConsecLosses !== undefined) setMaxConsecLosses(patch.maxConsecLosses);
-  };
-
   const log = (msg: string, tone?: string) =>
     setLogs((l) => [{ t: Date.now(), msg, tone }, ...l].slice(0, 200));
 
   const start = async () => {
     if (!client || !active || !user) { toast.error("Connect a Deriv account first"); return; }
-    if (!assessment.valid) { toast.error("Complete risk management setup first"); return; }
     primeAudio();
     playBoot();
     setLaunching(true);
@@ -318,16 +295,6 @@ function BotPage() {
         </div>
       </div>
 
-      {/* RISK MANAGEMENT — required before start */}
-      <RiskManagementSetup
-        values={riskValues}
-        onChange={onRiskChange}
-        balance={balance?.balance}
-        currency={balance?.currency || "USD"}
-        assessment={assessment}
-        locked={running}
-      />
-
       {/* HERO COMMAND CENTER */}
       <BotCommandCenter
         running={running}
@@ -344,8 +311,6 @@ function BotPage() {
         currency={balance?.currency || "USD"}
         analysis={analysis}
         canStart={!!(client && active && user)}
-        riskValidated={assessment.valid}
-        riskLabel={assessment.label}
         protection={{
           dailyRemaining: Math.max(0, Number(dailyLossLimit) + Math.min(0, pnl)),
           drawdown: Math.min(0, pnl),

@@ -22,8 +22,6 @@ type Props = {
   currency: string;
   analysis: Analysis | null;
   canStart: boolean;
-  riskValidated: boolean;
-  riskLabel?: string;
   protection?: {
     dailyRemaining: number;
     drawdown: number;
@@ -119,27 +117,25 @@ export function BotCommandCenter(p: Props) {
             <>
               <Button
                 onClick={p.onStart}
-                disabled={!p.canStart || !p.riskValidated}
+                disabled={!p.canStart}
                 size="lg"
                 className={cn(
                   "h-16 w-full text-base font-semibold transition-all",
-                  p.riskValidated && p.canStart
+                  p.canStart
                     ? "bg-gradient-to-r from-bull to-bull/80 text-bull-foreground shadow-[0_10px_40px_-10px_oklch(0.74_0.18_150/0.7)] hover:opacity-95 animate-pulse-glow"
                     : "bg-muted/40 text-muted-foreground cursor-not-allowed"
                 )}
               >
-                {p.riskValidated && p.canStart ? (
-                  <><ShieldCheck className="mr-2 h-5 w-5" /> Start AI Bot · Protected</>
+                {p.canStart ? (
+                  <><ShieldCheck className="mr-2 h-5 w-5" /> Start AI Bot</>
                 ) : (
-                  <><Lock className="mr-2 h-5 w-5" /> Locked · complete risk setup</>
+                  <><Lock className="mr-2 h-5 w-5" /> Locked · connect account</>
                 )}
               </Button>
               <p className="text-center text-[11px] text-muted-foreground">
                 {!p.canStart
                   ? "Connect a Deriv account to begin."
-                  : p.riskValidated
-                    ? `${p.riskLabel || "AI verified"} · one click and the bot trades for you`
-                    : "Fill the Risk Management card above to unlock."}
+                  : "One click and the bot trades for you"}
               </p>
             </>
           ) : (
