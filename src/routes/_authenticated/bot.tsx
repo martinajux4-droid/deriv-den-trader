@@ -48,17 +48,12 @@ function BotPage() {
   const [strategy, setStrategy] = useState<StrategyType>("rise_fall_ai");
   const [symbol, setSymbol] = useState("R_100");
   const [stake, setStake] = useState("1");
-  const [duration, setDuration] = useState("1");
-  const [unit, setUnit] = useState("m");
+  const [ticks, setTicks] = useState("5");
   const [barrier, setBarrier] = useState("5");
   const [martingale, setMartingale] = useState("2");
   const [tp, setTp] = useState("10");
-  const [sl, setSl] = useState("10");
-  const [maxTrades, setMaxTrades] = useState("20");
-  const [maxDrawdown, setMaxDrawdown] = useState("15");
-  const [maxConsecLosses, setMaxConsecLosses] = useState("3");
+  const [maxLosses, setMaxLosses] = useState("3");
   const [riskMode, setRiskMode] = useState<RiskMode>("normal");
-  const [stakeMode, setStakeMode] = useState<StakeMode>("smart");
   const [minConfidence, setMinConfidence] = useState("70");
   const [dailyLossLimit, setDailyLossLimit] = useState("25");
 
@@ -102,17 +97,14 @@ function BotPage() {
     setLaunching(true);
     const cfg: StrategyConfig = {
       type: strategy, symbol: sym, stake: Number(stake),
-      duration: Number(duration), duration_unit: unit,
+      duration: Math.max(1, Number(ticks) || 1), duration_unit: "t",
       barrier: Number(barrier),
       martingale: Number(martingale),
       take_profit: Number(tp) || undefined,
-      stop_loss: Number(sl) || undefined,
-      max_trades: Number(maxTrades) || undefined,
-      max_drawdown: Number(maxDrawdown) || undefined,
-      max_consecutive_losses: Number(maxConsecLosses) || undefined,
+      max_consecutive_losses: Number(maxLosses) || undefined,
       daily_loss_limit: Number(dailyLossLimit) || undefined,
       risk_mode: riskMode,
-      stake_mode: stakeMode,
+      stake_mode: "martingale",
       min_confidence: Number(minConfidence) || 65,
     };
 
@@ -156,7 +148,7 @@ function BotPage() {
             pnl, trades, wins, losses,
             streak: streakRef.current, bestStreak: bestStreakRef.current,
             baseEquity, currency: balance?.currency || "USD",
-            takeProfit: Number(tp) || undefined, stopLoss: Number(sl) || undefined,
+            takeProfit: Number(tp) || undefined,
             confidence: e.analysis.confidence, direction: e.analysis.recommendation,
             activeTrades, accountType, loginid: active.loginid, startedAt: Date.now(),
           });
