@@ -134,6 +134,16 @@ export function LiveTradeTicker({
       const price = snap.bid != null ? Math.max(0, snap.bid) : 0;
       await client.send({ sell: trade.contract_id, price });
       toast.success(`Take profit · selling at ${snap.profit >= 0 ? "+" : ""}${snap.profit.toFixed(2)} ${trade.currency}`);
+      onBotStop?.();
+      onSettlement?.({
+        profit: snap.profit,
+        contract_type: trade.contract_type,
+        stake: trade.stake,
+        entry_spot: snap.entry,
+        exit_spot: snap.current,
+        currency: trade.currency,
+      });
+      setTimeout(() => onClear(), 1200);
     } catch (e: any) {
       toast.error(e?.error?.message || "Could not sell contract");
     } finally {
