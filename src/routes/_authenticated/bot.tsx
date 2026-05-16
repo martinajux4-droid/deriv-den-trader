@@ -123,7 +123,7 @@ function BotPage() {
       running: true, paused: false, strategy, symbol: sym,
       pnl: 0, trades: 0, wins: 0, losses: 0, streak: 0, bestStreak: 0, peak: 0,
       baseEquity, currency: balance?.currency || "USD",
-      takeProfit: Number(tp) || undefined, stopLoss: Number(sl) || undefined,
+      takeProfit: Number(tp) || undefined,
       confidence: 0, direction: "WAIT", activeTrades: 0,
       accountType, loginid: active.loginid, startedAt: Date.now(),
     });
@@ -189,7 +189,7 @@ function BotPage() {
               pnl: np, trades: newTrades, wins: newWins, losses: newLosses,
               streak: streakRef.current, bestStreak: bestStreakRef.current,
               baseEquity, currency: balance?.currency || "USD",
-              takeProfit: Number(tp) || undefined, stopLoss: Number(sl) || undefined,
+              takeProfit: Number(tp) || undefined,
               confidence: analysis?.confidence ?? 0, direction: analysis?.recommendation ?? "WAIT",
               activeTrades: Math.max(0, activeTrades - 1),
               accountType, loginid: active.loginid, startedAt: Date.now(),
@@ -206,10 +206,6 @@ function BotPage() {
                 strategy, symbol, confidence: analysis?.confidence ?? 0,
                 currency: balance?.currency || "USD", accountType, reason: "take_profit",
               });
-            }
-            const slV = Number(sl);
-            if (slV > 0 && np <= -slV) {
-              emitBotEvent({ kind: "sl", symbol, message: `Stop loss reached at ${np.toFixed(2)}`, profit: np });
             }
             return np;
           });
@@ -443,65 +439,31 @@ function BotPage() {
 
           <div className="grid grid-cols-3 gap-2">
             <div><Label>Stake</Label><Input className="num" value={stake} onChange={(e) => setStake(e.target.value)} /></div>
-            <div><Label>Duration</Label><Input className="num" value={duration} onChange={(e) => setDuration(e.target.value)} /></div>
-            <div>
-              <Label>Unit</Label>
-              <Select value={unit} onValueChange={setUnit}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="t">Ticks</SelectItem>
-                  <SelectItem value="s">Sec</SelectItem>
-                  <SelectItem value="m">Min</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <div><Label>Ticks</Label><Input className="num" value={ticks} onChange={(e) => setTicks(e.target.value)} /></div>
+            <div><Label>Martingale</Label><Input className="num" value={martingale} onChange={(e) => setMartingale(e.target.value)} /></div>
           </div>
 
           {(strategy === "over_under_ai" || strategy === "matches_differs_ai") && (
             <div><Label>Barrier digit (0-9)</Label><Input className="num" value={barrier} onChange={(e) => setBarrier(e.target.value)} /></div>
           )}
 
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label>Risk mode</Label>
-              <Select value={riskMode} onValueChange={(v) => setRiskMode(v as RiskMode)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="safe">Safe</SelectItem>
-                  <SelectItem value="normal">Normal</SelectItem>
-                  <SelectItem value="aggressive">Aggressive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Stake mode</Label>
-              <Select value={stakeMode} onValueChange={(v) => setStakeMode(v as StakeMode)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="fixed">Fixed</SelectItem>
-                  <SelectItem value="smart">Smart (AI scaled)</SelectItem>
-                  <SelectItem value="martingale">Martingale</SelectItem>
-                  <SelectItem value="anti_martingale">Anti-martingale</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div>
+            <Label>Risk mode</Label>
+            <Select value={riskMode} onValueChange={(v) => setRiskMode(v as RiskMode)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="safe">Safe</SelectItem>
+                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="aggressive">Aggressive</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid grid-cols-3 gap-2">
             <div><Label>Take profit</Label><Input className="num" value={tp} onChange={(e) => setTp(e.target.value)} /></div>
-            <div><Label>Stop loss</Label><Input className="num" value={sl} onChange={(e) => setSl(e.target.value)} /></div>
-            <div><Label>Max DD</Label><Input className="num" value={maxDrawdown} onChange={(e) => setMaxDrawdown(e.target.value)} /></div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            <div><Label>Max trades</Label><Input className="num" value={maxTrades} onChange={(e) => setMaxTrades(e.target.value)} /></div>
-            <div><Label>Loss streak</Label><Input className="num" value={maxConsecLosses} onChange={(e) => setMaxConsecLosses(e.target.value)} /></div>
+            <div><Label>Max losses</Label><Input className="num" value={maxLosses} onChange={(e) => setMaxLosses(e.target.value)} /></div>
             <div><Label>Min conf %</Label><Input className="num" value={minConfidence} onChange={(e) => setMinConfidence(e.target.value)} /></div>
           </div>
-
-          {(stakeMode === "martingale" || stakeMode === "anti_martingale") && (
-            <div><Label>Multiplier</Label><Input className="num" value={martingale} onChange={(e) => setMartingale(e.target.value)} /></div>
-          )}
 
             <p className="flex items-center gap-1 pt-1 text-[10px] text-muted-foreground">
               <AlertTriangle className="h-3 w-3 text-warning" /> Bot runs in your browser. Closing this tab stops it.
