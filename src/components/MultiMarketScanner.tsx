@@ -130,7 +130,7 @@ export function MultiMarketScanner({
       <div className="flex items-center justify-between gap-3 border-b border-border/50 bg-gradient-to-r from-primary/10 via-background/0 to-accent/10 px-4 py-3">
         <div className="flex items-center gap-2 min-w-0">
           <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-primary/15 text-primary">
-            <Radar className={cn("h-4 w-4", scanning && "animate-spin-slow")} />
+            <Radar className={cn("h-4 w-4", scanning && "animate-spin [animation-duration:4s]")} />
             <span className="absolute inset-0 rounded-xl ring-1 ring-primary/30 animate-pulse" />
           </span>
           <div className="min-w-0">
