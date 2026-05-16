@@ -145,7 +145,7 @@ export function RiskManagementSetup({ values, onChange, balance, currency = "USD
     )}>
       <div className="pointer-events-none absolute inset-0 bg-grid-fine opacity-[0.05] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_30%,black,transparent_75%)]" />
 
-      <div className="relative grid gap-5 lg:grid-cols-[1fr_300px] lg:items-start">
+      <div className="relative grid gap-5">
         {/* HEADER + FIELDS */}
         <div className="space-y-4">
           <div className="flex items-start justify-between gap-3">
@@ -261,50 +261,6 @@ export function RiskManagementSetup({ values, onChange, balance, currency = "USD
               </ul>
             </div>
           )}
-        </div>
-
-        {/* AI SAFETY METER */}
-        <div className="lg:sticky lg:top-4">
-          <div className={cn(
-            "rounded-2xl border bg-background/40 p-4 backdrop-blur-md",
-            tone === "bull" && "border-bull/30",
-            tone === "primary" && "border-primary/30",
-            tone === "warning" && "border-warning/40",
-            tone === "bear" && "border-bear/40",
-          )}>
-            <div className="flex items-center justify-between text-[10px] uppercase tracking-widest text-muted-foreground">
-              <span className="flex items-center gap-1.5"><Brain className="h-3 w-3" /> AI Safety Analysis</span>
-              <span className={cn(
-                "rounded-full px-2 py-0.5 text-[9px] font-bold",
-                tone === "bull" && "bg-bull/15 text-bull",
-                tone === "primary" && "bg-primary/15 text-primary",
-                tone === "warning" && "bg-warning/15 text-warning",
-                tone === "bear" && "bg-bear/15 text-bear",
-              )}>
-                {assessment.level.toUpperCase()}
-              </span>
-            </div>
-
-            <RiskGauge score={assessment.score} tone={tone} />
-
-            <div className="mt-3 space-y-1">
-              <div className="text-sm font-semibold">{assessment.label}</div>
-              <p className="text-[12px] leading-relaxed text-muted-foreground">{assessment.message}</p>
-            </div>
-
-            <div className="mt-4 grid grid-cols-2 gap-2 text-[11px]">
-              <Mini icon={<Lock className="h-3 w-3" />} label="Stop Loss" value={values.stopLoss ? `${values.stopLoss} ${currency}` : "—"} ok={Number(values.stopLoss) > 0} />
-              <Mini icon={<Sparkles className="h-3 w-3" />} label="Take Profit" value={values.takeProfit ? `${values.takeProfit} ${currency}` : "—"} ok={Number(values.takeProfit) > 0} />
-              <Mini icon={<Gauge className="h-3 w-3" />} label="AI Filter" value={values.minConfidence ? `${values.minConfidence}%` : "—"} ok={Number(values.minConfidence) >= 50} />
-              <Mini icon={<Shield className="h-3 w-3" />} label="Daily Cap" value={values.dailyLossLimit ? `${values.dailyLossLimit} ${currency}` : "—"} ok={Number(values.dailyLossLimit) > 0} />
-            </div>
-
-            {assessment.valid && (
-              <div className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-bull/40 bg-bull/10 px-3 py-2 text-xs font-semibold text-bull animate-pulse-glow">
-                <CheckCircle2 className="h-4 w-4" /> Risk validated · AI Ready
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </div>
