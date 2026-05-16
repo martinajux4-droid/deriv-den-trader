@@ -405,6 +405,7 @@ function BotPage() {
           paused={paused}
           onPause={togglePause}
           onResume={togglePause}
+          sellAfterTicks={Math.max(1, Number(ticks) || 1)}
         />
       )}
 
