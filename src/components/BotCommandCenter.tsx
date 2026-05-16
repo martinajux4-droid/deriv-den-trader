@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Brain, TrendingUp, TrendingDown, Activity, Gauge, Pause, Play, Square, Zap, Sparkles, Shield, Lock, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Brain, TrendingUp, TrendingDown, Activity, Gauge, Pause, Play, Square, Zap, Sparkles, Shield, Lock, ShieldCheck, AlertTriangle, Radar } from "lucide-react";
 import type { Analysis } from "@/lib/ai-analysis";
 import type { BotState } from "@/lib/bot-engine";
 import { Button } from "@/components/ui/button";
@@ -127,7 +127,7 @@ export function BotCommandCenter(p: Props) {
                 )}
               >
                 {p.canStart ? (
-                  <><ShieldCheck className="mr-2 h-5 w-5" /> Start AI Bot</>
+                  <><Radar className="mr-2 h-5 w-5" /> Scan Market</>
                 ) : (
                   <><Lock className="mr-2 h-5 w-5" /> Locked · connect account</>
                 )}
@@ -135,7 +135,7 @@ export function BotCommandCenter(p: Props) {
               <p className="text-center text-[11px] text-muted-foreground">
                 {!p.canStart
                   ? "Connect a Deriv account to begin."
-                  : "One click and the bot trades for you"}
+                  : "AI scans all volatility markets and executes when confidence ≥ 61%"}
               </p>
             </>
           ) : (
