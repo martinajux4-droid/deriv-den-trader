@@ -19,7 +19,6 @@ import { AlertTriangle, Settings2, ChevronDown, Brain, TrendingUp, Hash, Sigma, 
 import { setBotStatus, emitBotEvent, emitTakeProfit } from "@/hooks/use-bot-status";
 import { BotLaunchOverlay } from "@/components/BotLaunchOverlay";
 import { BotCommandCenter } from "@/components/BotCommandCenter";
-import { RiskManagementSetup, assessRisk, type RiskValues } from "@/components/RiskManagementSetup";
 import { cn } from "@/lib/utils";
 import { playBoot, playExecute, playProfit, playLoss, startScanLoop, stopScanLoop, primeAudio } from "@/lib/audio-engine";
 
