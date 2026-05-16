@@ -36,6 +36,7 @@ export function LiveTradeTicker({
 }) {
   const { client } = useDeriv();
   const [selling, setSelling] = useState(false);
+  const autoSoldRef = useRef(false);
   const [snap, setSnap] = useState<Snap>({
     entry: null, current: null, exit: null, profit: 0, bid: null,
     isExpired: false, isSold: false, ticksRemaining: null, barrier: null,
@@ -44,6 +45,7 @@ export function LiveTradeTicker({
   useEffect(() => {
     if (!trade || !client) return;
     setSnap({ entry: null, current: null, exit: null, profit: 0, bid: null, isExpired: false, isSold: false, ticksRemaining: null, barrier: null });
+    autoSoldRef.current = false;
 
     let stopped = false;
     let subId: string | undefined;
@@ -53,6 +55,7 @@ export function LiveTradeTicker({
       if (!c || c.contract_id !== trade.contract_id) return;
       subId = msg.subscription?.id || subId;
       if (stopped) return;
+      const ticksPassed = Number(c.tick_passed ?? 0);
       setSnap({
         entry: c.entry_spot != null ? Number(c.entry_spot) : null,
         current: c.current_spot != null ? Number(c.current_spot) : null,
@@ -66,6 +69,27 @@ export function LiveTradeTicker({
           : null,
         barrier: c.barrier ?? null,
       });
+      // Auto-sell after the first tick has passed
+      if (
+        !autoSoldRef.current &&
+        !c.is_sold &&
+        c.is_valid_to_sell &&
+        ticksPassed >= 1
+      ) {
+        autoSoldRef.current = true;
+        const price = c.bid_price != null ? Number(c.bid_price) : 0;
+        client
+          .send({ sell: trade.contract_id, price })
+          .then(() => {
+            toast.success(
+              `Auto-sold after 1 tick · ${Number(c.profit ?? 0) >= 0 ? "+" : ""}${Number(c.profit ?? 0).toFixed(2)} ${trade.currency}`
+            );
+          })
+          .catch((e: any) => {
+            autoSoldRef.current = false;
+            console.warn("[auto-sell]", e?.error?.message || e);
+          });
+      }
       if (c.is_sold) {
         setTimeout(() => { if (!stopped) onClear(); }, 1200);
       }
