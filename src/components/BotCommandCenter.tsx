@@ -215,36 +215,3 @@ function ProtectionChip({ icon, label, value, tone, pulse }: {
     </div>
   );
 }
-
-function Metric({ icon, label, value, bar, tone = "muted", rightIcon }: {
-  icon: React.ReactNode; label: string; value: string;
-  bar?: number; tone?: "primary" | "accent" | "bull" | "bear" | "warn" | "muted";
-  rightIcon?: React.ReactNode;
-}) {
-  const toneText =
-    tone === "primary" ? "text-primary" :
-    tone === "accent"  ? "text-accent"  :
-    tone === "bull"    ? "text-bull"    :
-    tone === "bear"    ? "text-bear"    :
-    tone === "warn"    ? "text-warning" : "text-foreground";
-  const barBg =
-    tone === "primary" ? "bg-primary" :
-    tone === "accent"  ? "bg-accent"  :
-    tone === "bull"    ? "bg-bull"    :
-    tone === "bear"    ? "bg-bear"    :
-    tone === "warn"    ? "bg-warning" : "bg-foreground";
-  return (
-    <div className="rounded-2xl border border-border/60 bg-background/30 p-3 backdrop-blur-sm">
-      <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground">
-        <span className="flex items-center gap-1.5">{icon}{label}</span>
-        {rightIcon}
-      </div>
-      <div className={cn("num mt-1 text-2xl font-semibold", toneText)}>{value}</div>
-      {bar != null && (
-        <div className="mt-2 h-1 overflow-hidden rounded-full bg-background/60">
-          <div className={cn("h-full transition-all duration-500", barBg)} style={{ width: `${Math.min(100, bar)}%` }} />
-        </div>
-      )}
-    </div>
-  );
-}
