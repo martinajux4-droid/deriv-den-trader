@@ -245,6 +245,15 @@ function BotPage() {
           stopScanLoop();
           if (e.reason?.includes("Max trades")) {
             toast.success(`Target reached · ${e.reason} · PnL ${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)} ${balance?.currency || ""}`);
+            // Show session summary immediately
+            setSettlement({
+              profit: pnl,
+              contract_type: `SESSION · ${trades} trades`,
+              stake: trades,
+              entry_spot: wins,
+              exit_spot: losses,
+              currency: balance?.currency || "USD",
+            });
           }
           emitBotEvent({ kind: "info", message: `Bot stopped · ${e.reason}` });
           setBotStatus({ running: false });
