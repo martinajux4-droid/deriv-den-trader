@@ -107,6 +107,7 @@ function BotPage() {
       take_profit: Number(tp) || undefined,
       max_consecutive_losses: Number(maxLosses) || undefined,
       daily_loss_limit: Number(dailyLossLimit) || undefined,
+      max_trades: Number(maxTrades) || undefined,
       risk_mode: "normal" as RiskMode,
       stake_mode: "martingale",
       min_confidence: Number(minConfidence) || 65,
