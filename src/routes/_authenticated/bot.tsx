@@ -20,6 +20,7 @@ import { setBotStatus, emitBotEvent, emitTakeProfit } from "@/hooks/use-bot-stat
 import { BotLaunchOverlay } from "@/components/BotLaunchOverlay";
 import { BotCommandCenter } from "@/components/BotCommandCenter";
 import { MarketScanOverlay } from "@/components/MarketScanOverlay";
+import { SettlementPopup, type SettlementResult } from "@/components/manual/SettlementPopup";
 import { cn } from "@/lib/utils";
 import { playBoot, playExecute, playProfit, playLoss, startScanLoop, stopScanLoop, primeAudio } from "@/lib/audio-engine";
 
@@ -67,6 +68,7 @@ function BotPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
   const autoPausedRef = useRef(false);
+  const [settlement, setSettlement] = useState<SettlementResult>(null);
   const [pnl, setPnl] = useState(0);
   const [trades, setTrades] = useState(0);
   const [wins, setWins] = useState(0);
@@ -167,6 +169,14 @@ function BotPage() {
           const profit = e.profit;
           if (profit > 0) playProfit();
           else if (profit < 0) playLoss();
+          setSettlement({
+            profit,
+            contract_type: (e as any).contract_type || cfg.type,
+            stake: (e as any).stake ?? Number(stake),
+            entry_spot: (e as any).settled?.entry_spot ?? null,
+            exit_spot: (e as any).settled?.exit_spot ?? null,
+            currency: balance?.currency || "USD",
+          });
           // streak math
           if (profit > 0) {
             streakRef.current = streakRef.current >= 0 ? streakRef.current + 1 : 1;
