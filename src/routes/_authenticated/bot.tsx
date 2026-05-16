@@ -57,6 +57,7 @@ function BotPage() {
   const [maxLosses, setMaxLosses] = useState("3");
   const [minConfidence, setMinConfidence] = useState("70");
   const [dailyLossLimit, setDailyLossLimit] = useState("25");
+  const [maxTrades, setMaxTrades] = useState("10");
 
   const [running, setRunning] = useState(false);
   const [paused, setPaused] = useState(false);
@@ -106,6 +107,7 @@ function BotPage() {
       take_profit: Number(tp) || undefined,
       max_consecutive_losses: Number(maxLosses) || undefined,
       daily_loss_limit: Number(dailyLossLimit) || undefined,
+      max_trades: Number(maxTrades) || undefined,
       risk_mode: "normal" as RiskMode,
       stake_mode: "martingale",
       min_confidence: Number(minConfidence) || 65,
@@ -241,6 +243,9 @@ function BotPage() {
           log(`Stopped: ${e.reason}`, "info");
           setRunning(false);
           stopScanLoop();
+          if (e.reason?.includes("Max trades")) {
+            toast.success(`Target reached · ${e.reason} · PnL ${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)} ${balance?.currency || ""}`);
+          }
           emitBotEvent({ kind: "info", message: `Bot stopped · ${e.reason}` });
           setBotStatus({ running: false });
         }
@@ -520,10 +525,11 @@ function BotPage() {
             <div><Label>Barrier digit (0-9)</Label><Input className="num" value={barrier} onChange={(e) => setBarrier(e.target.value)} /></div>
           )}
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             <div><Label>Take profit</Label><Input className="num" value={tp} onChange={(e) => setTp(e.target.value)} /></div>
             <div><Label>Max losses</Label><Input className="num" value={maxLosses} onChange={(e) => setMaxLosses(e.target.value)} /></div>
             <div><Label>Min conf %</Label><Input className="num" value={minConfidence} onChange={(e) => setMinConfidence(e.target.value)} /></div>
+            <div><Label>Max trades</Label><Input className="num" value={maxTrades} onChange={(e) => setMaxTrades(e.target.value)} /></div>
           </div>
 
             <p className="flex items-center gap-1 pt-1 text-[10px] text-muted-foreground">
