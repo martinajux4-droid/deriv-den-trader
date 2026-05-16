@@ -13,9 +13,10 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { AlertTriangle, Settings2, ChevronDown, Brain, TrendingUp, Hash, Sigma, Shuffle, Zap, Sparkles } from "lucide-react";
+import { AlertTriangle, Settings2, ChevronDown, Brain, TrendingUp, Hash, Sigma, Shuffle, Zap, Sparkles, ShieldAlert } from "lucide-react";
 import { setBotStatus, emitBotEvent, emitTakeProfit } from "@/hooks/use-bot-status";
 import { BotCommandCenter } from "@/components/BotCommandCenter";
 import { MarketScanOverlay } from "@/components/MarketScanOverlay";
@@ -54,7 +55,6 @@ function BotPage() {
   const [martingale, setMartingale] = useState("2");
   const [tp, setTp] = useState("10");
   const [maxLosses, setMaxLosses] = useState("3");
-  const [riskMode, setRiskMode] = useState<RiskMode>("normal");
   const [minConfidence, setMinConfidence] = useState("70");
   const [dailyLossLimit, setDailyLossLimit] = useState("25");
 
@@ -66,7 +66,9 @@ function BotPage() {
   const [, setLogs] = useState<{ t: number; msg: string; tone?: string }[]>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
-  const autoPausedRef = useRef(false);
+  const autoStoppedRef = useRef(false);
+  const [dangerOpen, setDangerOpen] = useState(false);
+  const [dangerConf, setDangerConf] = useState(0);
   const [settlement, setSettlement] = useState<SettlementResult>(null);
   const [liveTrade, setLiveTrade] = useState<LiveTradeInfo>(null);
   const openTradesRef = useRef<Map<number, { contract_type: string; stake: number }>>(new Map());
@@ -104,7 +106,7 @@ function BotPage() {
       take_profit: Number(tp) || undefined,
       max_consecutive_losses: Number(maxLosses) || undefined,
       daily_loss_limit: Number(dailyLossLimit) || undefined,
-      risk_mode: riskMode,
+      risk_mode: "normal" as RiskMode,
       stake_mode: "martingale",
       min_confidence: Number(minConfidence) || 65,
     };
@@ -117,7 +119,8 @@ function BotPage() {
     setRunning(true); setPaused(false); setLogs([]); setPnl(0); setTrades(0);
     setWins(0); setLosses(0); setActiveTrades(0);
     streakRef.current = 0; bestStreakRef.current = 0; tpFiredRef.current = false;
-    autoPausedRef.current = false;
+    autoStoppedRef.current = false;
+    setDangerOpen(false);
     const baseEquity = balance?.balance ?? 0;
     const accountType: "Demo" | "Real" = active.is_virtual ? "Demo" : "Real";
     setBotStatus({
@@ -293,22 +296,22 @@ function BotPage() {
 
   useEffect(() => () => { runnerRef.current?.stop("Page closed"); stopScanLoop(); }, []);
 
-  // Auto pause/resume based on live AI confidence (≥61 execute · <58 pause)
+  // Auto-stop when market confidence collapses below 56% — show danger popup.
   useEffect(() => {
     const r = runnerRef.current;
     if (!r || !running || !analysis) return;
-    if (analysis.confidence < 58 && !paused) {
-      autoPausedRef.current = true;
-      r.pause();
-      setPaused(true);
-      emitBotEvent({ kind: "info", message: `Auto-paused · confidence ${analysis.confidence}% below 58%`, symbol });
-    } else if (analysis.confidence >= 61 && paused && autoPausedRef.current) {
-      autoPausedRef.current = false;
-      r.resume();
-      setPaused(false);
-      emitBotEvent({ kind: "info", message: `Resumed · confidence ${analysis.confidence}% ≥ 61%`, symbol });
+    if (analysis.confidence < 56 && !autoStoppedRef.current) {
+      autoStoppedRef.current = true;
+      setDangerConf(analysis.confidence);
+      setDangerOpen(true);
+      r.stop(`Danger market · confidence ${analysis.confidence}% below 56%`);
+      emitBotEvent({
+        kind: "info",
+        message: `⚠️ Danger market · auto-stopped at ${analysis.confidence}% confidence`,
+        symbol,
+      });
     }
-  }, [analysis, running, paused, symbol]);
+  }, [analysis, running, symbol]);
 
   // Allow the TP modal "Stop Bot" button to stop the bot from anywhere
   useEffect(() => {
@@ -320,6 +323,35 @@ function BotPage() {
   return (
     <div className="space-y-6">
       <SettlementPopup result={settlement} onClose={() => setSettlement(null)} />
+      {dangerOpen && (
+        <div className="pointer-events-none fixed inset-0 z-[110] flex items-start justify-center pt-24 px-4 animate-fade-in">
+          <div className="pointer-events-auto relative w-full max-w-sm overflow-hidden rounded-2xl border-2 border-bear/70 bg-bear/15 p-5 backdrop-blur-xl shadow-[0_0_60px_-10px_var(--meter-bear)]">
+            <div className="flex items-start gap-3">
+              <div className="grid h-12 w-12 flex-none place-items-center rounded-full bg-bear/25 text-bear animate-pulse">
+                <ShieldAlert className="h-7 w-7" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[11px] uppercase tracking-[0.2em] font-bold text-bear">Danger market</div>
+                <div className="mt-0.5 text-base font-extrabold">Auto-stopped trading</div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Market confidence on <span className="font-semibold text-foreground">{symbol}</span> dropped
+                  to <span className="num font-bold text-bear">{dangerConf}%</span> — below the 56% safety floor.
+                  Re-scan when conditions improve.
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setDangerOpen(false)}>
+                    Dismiss
+                  </Button>
+                  <Button size="sm" className="h-8 bg-primary text-primary-foreground hover:bg-primary/90 text-xs"
+                    onClick={() => { setDangerOpen(false); beginScan(); }}>
+                    Re-scan markets
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <MarketScanOverlay
         open={scanOpen}
         onClose={() => setScanOpen(false)}
@@ -475,18 +507,6 @@ function BotPage() {
           {(strategy === "over_under_ai" || strategy === "matches_differs_ai") && (
             <div><Label>Barrier digit (0-9)</Label><Input className="num" value={barrier} onChange={(e) => setBarrier(e.target.value)} /></div>
           )}
-
-          <div>
-            <Label>Risk mode</Label>
-            <Select value={riskMode} onValueChange={(v) => setRiskMode(v as RiskMode)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="safe">Safe</SelectItem>
-                <SelectItem value="normal">Normal</SelectItem>
-                <SelectItem value="aggressive">Aggressive</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
 
           <div className="grid grid-cols-3 gap-2">
             <div><Label>Take profit</Label><Input className="num" value={tp} onChange={(e) => setTp(e.target.value)} /></div>
