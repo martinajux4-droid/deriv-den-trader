@@ -20,6 +20,7 @@ import { setBotStatus, emitBotEvent, emitTakeProfit } from "@/hooks/use-bot-stat
 import { BotLaunchOverlay } from "@/components/BotLaunchOverlay";
 import { BotCommandCenter } from "@/components/BotCommandCenter";
 import { MarketScanOverlay } from "@/components/MarketScanOverlay";
+import { SettlementPopup, type SettlementResult } from "@/components/manual/SettlementPopup";
 import { cn } from "@/lib/utils";
 import { playBoot, playExecute, playProfit, playLoss, startScanLoop, stopScanLoop, primeAudio } from "@/lib/audio-engine";
 
@@ -67,6 +68,8 @@ function BotPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
   const autoPausedRef = useRef(false);
+  const [settlement, setSettlement] = useState<SettlementResult>(null);
+  const openTradesRef = useRef<Map<number, { contract_type: string; stake: number }>>(new Map());
   const [pnl, setPnl] = useState(0);
   const [trades, setTrades] = useState(0);
   const [wins, setWins] = useState(0);
@@ -155,6 +158,7 @@ function BotPage() {
         }
         if (e.kind === "trade_open") {
           setActiveTrades((n) => n + 1);
+          openTradesRef.current.set(e.contract_id, { contract_type: e.contract_type, stake: e.stake });
           playExecute();
           emitBotEvent({
             kind: "open", symbol, contract: e.contract_type,
@@ -167,6 +171,16 @@ function BotPage() {
           const profit = e.profit;
           if (profit > 0) playProfit();
           else if (profit < 0) playLoss();
+          const meta = openTradesRef.current.get(e.contract_id);
+          openTradesRef.current.delete(e.contract_id);
+          setSettlement({
+            profit,
+            contract_type: meta?.contract_type || cfg.type,
+            stake: meta?.stake ?? Number(stake),
+            entry_spot: null,
+            exit_spot: null,
+            currency: balance?.currency || "USD",
+          });
           // streak math
           if (profit > 0) {
             streakRef.current = streakRef.current >= 0 ? streakRef.current + 1 : 1;
@@ -301,6 +315,7 @@ function BotPage() {
   return (
     <div className="space-y-6">
       <BotLaunchOverlay open={launching} onDone={() => setLaunching(false)} />
+      <SettlementPopup result={settlement} onClose={() => setSettlement(null)} />
       <MarketScanOverlay
         open={scanOpen}
         onClose={() => setScanOpen(false)}
