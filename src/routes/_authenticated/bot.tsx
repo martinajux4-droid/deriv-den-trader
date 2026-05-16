@@ -69,6 +69,7 @@ function BotPage() {
   const [scanOpen, setScanOpen] = useState(false);
   const autoPausedRef = useRef(false);
   const [settlement, setSettlement] = useState<SettlementResult>(null);
+  const openTradesRef = useRef<Map<number, { contract_type: string; stake: number }>>(new Map());
   const [pnl, setPnl] = useState(0);
   const [trades, setTrades] = useState(0);
   const [wins, setWins] = useState(0);
@@ -157,6 +158,7 @@ function BotPage() {
         }
         if (e.kind === "trade_open") {
           setActiveTrades((n) => n + 1);
+          openTradesRef.current.set(e.contract_id, { contract_type: e.contract_type, stake: e.stake });
           playExecute();
           emitBotEvent({
             kind: "open", symbol, contract: e.contract_type,
@@ -169,12 +171,14 @@ function BotPage() {
           const profit = e.profit;
           if (profit > 0) playProfit();
           else if (profit < 0) playLoss();
+          const meta = openTradesRef.current.get(e.contract_id);
+          openTradesRef.current.delete(e.contract_id);
           setSettlement({
             profit,
-            contract_type: (e as any).contract_type || cfg.type,
-            stake: (e as any).stake ?? Number(stake),
-            entry_spot: (e as any).settled?.entry_spot ?? null,
-            exit_spot: (e as any).settled?.exit_spot ?? null,
+            contract_type: meta?.contract_type || cfg.type,
+            stake: meta?.stake ?? Number(stake),
+            entry_spot: null,
+            exit_spot: null,
             currency: balance?.currency || "USD",
           });
           // streak math
