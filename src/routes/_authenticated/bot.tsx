@@ -5,7 +5,7 @@ import { useDeriv } from "@/hooks/use-deriv";
 import { supabase } from "@/integrations/supabase/client";
 import {
   BotRunner, type StrategyConfig, type StrategyType, type RiskMode,
-  type StakeMode, type BotState,
+  type BotState,
 } from "@/lib/bot-engine";
 import type { Analysis } from "@/lib/ai-analysis";
 import { DERIV_SYMBOLS } from "@/lib/deriv-symbols";
