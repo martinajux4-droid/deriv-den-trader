@@ -17,12 +17,12 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { toast } from "sonner";
 import { AlertTriangle, Settings2, ChevronDown, Brain, TrendingUp, Hash, Sigma, Shuffle, Zap, Sparkles } from "lucide-react";
 import { setBotStatus, emitBotEvent, emitTakeProfit } from "@/hooks/use-bot-status";
-import { BotLaunchOverlay } from "@/components/BotLaunchOverlay";
 import { BotCommandCenter } from "@/components/BotCommandCenter";
 import { MarketScanOverlay } from "@/components/MarketScanOverlay";
 import { SettlementPopup, type SettlementResult } from "@/components/manual/SettlementPopup";
+import { LiveTradeTicker, type LiveTradeInfo } from "@/components/LiveTradeTicker";
 import { cn } from "@/lib/utils";
-import { playBoot, playExecute, playProfit, playLoss, startScanLoop, stopScanLoop, primeAudio } from "@/lib/audio-engine";
+import { playExecute, playProfit, playLoss, startScanLoop, stopScanLoop, primeAudio } from "@/lib/audio-engine";
 
 export const Route = createFileRoute("/_authenticated/bot")({
   component: BotPage,
@@ -64,11 +64,11 @@ function BotPage() {
   const [stateDetail, setStateDetail] = useState<string>("");
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [, setLogs] = useState<{ t: number; msg: string; tone?: string }[]>([]);
-  const [launching, setLaunching] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
   const autoPausedRef = useRef(false);
   const [settlement, setSettlement] = useState<SettlementResult>(null);
+  const [liveTrade, setLiveTrade] = useState<LiveTradeInfo>(null);
   const openTradesRef = useRef<Map<number, { contract_type: string; stake: number }>>(new Map());
   const [pnl, setPnl] = useState(0);
   const [trades, setTrades] = useState(0);
@@ -96,8 +96,6 @@ function BotPage() {
     const sym = overrideSymbol || symbol;
     if (overrideSymbol && overrideSymbol !== symbol) setSymbol(overrideSymbol);
     primeAudio();
-    playBoot();
-    setLaunching(true);
     const cfg: StrategyConfig = {
       type: strategy, symbol: sym, stake: Number(stake),
       duration: Math.max(1, Number(ticks) || 1), duration_unit: "t",
@@ -160,6 +158,13 @@ function BotPage() {
           setActiveTrades((n) => n + 1);
           openTradesRef.current.set(e.contract_id, { contract_type: e.contract_type, stake: e.stake });
           playExecute();
+          setLiveTrade({
+            contract_id: e.contract_id,
+            contract_type: e.contract_type,
+            stake: e.stake,
+            symbol: cfg.symbol,
+            currency: balance?.currency || "USD",
+          });
           emitBotEvent({
             kind: "open", symbol, contract: e.contract_type,
             confidence: analysis?.confidence,
@@ -314,7 +319,6 @@ function BotPage() {
 
   return (
     <div className="space-y-6">
-      <BotLaunchOverlay open={launching} onDone={() => setLaunching(false)} />
       <SettlementPopup result={settlement} onClose={() => setSettlement(null)} />
       <MarketScanOverlay
         open={scanOpen}
@@ -361,6 +365,10 @@ function BotPage() {
         onStop={stop}
         onEmergency={emergency}
       />
+
+      {liveTrade && (
+        <LiveTradeTicker trade={liveTrade} onClear={() => setLiveTrade(null)} />
+      )}
 
       {/* Settings (collapsible) */}
       <div className="grid gap-6">
