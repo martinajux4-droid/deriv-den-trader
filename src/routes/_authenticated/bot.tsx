@@ -82,33 +82,11 @@ function BotPage() {
 
   const meta = useMemo(() => STRATEGIES.find((s) => s.id === strategy)!, [strategy]);
 
-  const riskValues: RiskValues = {
-    stake, takeProfit: tp, stopLoss: sl, maxTrades, riskMode, minConfidence,
-    dailyLossLimit, maxConsecLosses,
-  };
-  const assessment = useMemo(
-    () => assessRisk(riskValues, balance?.balance),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [stake, tp, sl, maxTrades, riskMode, minConfidence, dailyLossLimit, maxConsecLosses, balance?.balance],
-  );
-
-  const onRiskChange = (patch: Partial<RiskValues>) => {
-    if (patch.stake !== undefined) setStake(patch.stake);
-    if (patch.takeProfit !== undefined) setTp(patch.takeProfit);
-    if (patch.stopLoss !== undefined) setSl(patch.stopLoss);
-    if (patch.maxTrades !== undefined) setMaxTrades(patch.maxTrades);
-    if (patch.riskMode !== undefined) setRiskMode(patch.riskMode);
-    if (patch.minConfidence !== undefined) setMinConfidence(patch.minConfidence);
-    if (patch.dailyLossLimit !== undefined) setDailyLossLimit(patch.dailyLossLimit);
-    if (patch.maxConsecLosses !== undefined) setMaxConsecLosses(patch.maxConsecLosses);
-  };
-
   const log = (msg: string, tone?: string) =>
     setLogs((l) => [{ t: Date.now(), msg, tone }, ...l].slice(0, 200));
 
   const start = async () => {
     if (!client || !active || !user) { toast.error("Connect a Deriv account first"); return; }
-    if (!assessment.valid) { toast.error("Complete risk management setup first"); return; }
     primeAudio();
     playBoot();
     setLaunching(true);
