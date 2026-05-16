@@ -26,13 +26,14 @@ type Snap = {
 };
 
 export function LiveTradeTicker({
-  trade, onClear, paused, onPause, onResume,
+  trade, onClear, paused, onPause, onResume, sellAfterTicks,
 }: {
   trade: LiveTradeInfo;
   onClear: () => void;
   paused?: boolean;
   onPause?: () => void;
   onResume?: () => void;
+  sellAfterTicks?: number;
 }) {
   const { client } = useDeriv();
   const [selling, setSelling] = useState(false);
@@ -69,12 +70,13 @@ export function LiveTradeTicker({
           : null,
         barrier: c.barrier ?? null,
       });
-      // Auto-sell after the first tick has passed
+      // Auto-sell after the configured number of ticks have passed
+      const threshold = Math.max(1, Number(sellAfterTicks) || 1);
       if (
         !autoSoldRef.current &&
         !c.is_sold &&
         c.is_valid_to_sell &&
-        ticksPassed >= 1
+        ticksPassed >= threshold
       ) {
         autoSoldRef.current = true;
         const price = c.bid_price != null ? Number(c.bid_price) : 0;
@@ -82,7 +84,7 @@ export function LiveTradeTicker({
           .send({ sell: trade.contract_id, price })
           .then(() => {
             toast.success(
-              `Auto-sold after 1 tick · ${Number(c.profit ?? 0) >= 0 ? "+" : ""}${Number(c.profit ?? 0).toFixed(2)} ${trade.currency}`
+              `Auto-sold after ${threshold} tick${threshold > 1 ? "s" : ""} · ${Number(c.profit ?? 0) >= 0 ? "+" : ""}${Number(c.profit ?? 0).toFixed(2)} ${trade.currency}`
             );
           })
           .catch((e: any) => {
