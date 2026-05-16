@@ -22,7 +22,6 @@ import { BotCommandCenter } from "@/components/BotCommandCenter";
 import { RiskManagementSetup, assessRisk, type RiskValues } from "@/components/RiskManagementSetup";
 import { cn } from "@/lib/utils";
 import { playBoot, playExecute, playProfit, playLoss, startScanLoop, stopScanLoop, primeAudio } from "@/lib/audio-engine";
-import { MultiMarketScanner, type ScannerSignal } from "@/components/MultiMarketScanner";
 
 export const Route = createFileRoute("/_authenticated/bot")({
   component: BotPage,
@@ -81,8 +80,6 @@ function BotPage() {
   const tpFiredRef = useRef(false);
   const runnerRef = useRef<BotRunner | null>(null);
   const runIdRef = useRef<string | null>(null);
-  const autoPausedRef = useRef(false);
-  const [bestSignal, setBestSignal] = useState<ScannerSignal | null>(null);
 
   const meta = useMemo(() => STRATEGIES.find((s) => s.id === strategy)!, [strategy]);
 
@@ -301,25 +298,6 @@ function BotPage() {
 
   useEffect(() => () => { runnerRef.current?.stop("Page closed"); stopScanLoop(); }, []);
 
-  // Auto pause/resume based on multi-market scanner confidence:
-  //  < 58%  → pause (market weakening), finish any active trade
-  //  ≥ 61%  → resume if we were the ones who paused
-  useEffect(() => {
-    if (!running || !runnerRef.current || !bestSignal) return;
-    const r = runnerRef.current;
-    if (!paused && bestSignal.confidence < 58) {
-      autoPausedRef.current = true;
-      r.pause();
-      setPaused(true);
-      toast.warning(`AI paused · ${bestSignal.name} ${bestSignal.confidence}% · waiting for confirmation`);
-    } else if (paused && autoPausedRef.current && bestSignal.confidence >= 61) {
-      autoPausedRef.current = false;
-      r.resume();
-      setPaused(false);
-      toast.success(`AI resumed · ${bestSignal.name} ${bestSignal.confidence}% confidence`);
-    }
-  }, [bestSignal, running, paused]);
-
   // Allow the TP modal "Stop Bot" button to stop the bot from anywhere
   useEffect(() => {
     const onStop = () => runnerRef.current?.stop("Stopped from celebration");
@@ -348,20 +326,6 @@ function BotPage() {
         currency={balance?.currency || "USD"}
         assessment={assessment}
         locked={running}
-      />
-
-      {/* MULTI-MARKET AI SCANNER */}
-      <MultiMarketScanner
-        activeSymbol={symbol}
-        onSelectMarket={(s) => {
-          if (running) {
-            toast.info(`Stop the bot to switch market to ${s}`);
-            return;
-          }
-          setSymbol(s);
-          toast.success(`Market locked: ${s}`);
-        }}
-        onBestSignal={setBestSignal}
       />
 
       {/* HERO COMMAND CENTER */}
@@ -394,8 +358,8 @@ function BotPage() {
         onEmergency={emergency}
       />
 
-      {/* TWO-COLUMN: settings (collapsible) + live feed */}
-      <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
+      {/* Settings (collapsible) */}
+      <div className="grid gap-6">
         {/* LEFT: configuration */}
         <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
           <Card className="card-premium space-y-3 p-5">
@@ -552,41 +516,6 @@ function BotPage() {
             </CollapsibleContent>
           </Card>
         </Collapsible>
-
-        {/* RIGHT: live activity */}
-        <div className="space-y-4">
-          <div className="card-premium overflow-hidden p-5">
-            <div className="mb-3 flex items-center gap-2">
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent/15 text-accent">
-                <Brain className="h-4 w-4" />
-              </span>
-              <div>
-                <div className="text-sm font-semibold">AI Market Read · {symbol}</div>
-                <div className="text-[11px] text-muted-foreground">Reasoning updates every tick</div>
-              </div>
-            </div>
-            {!analysis ? (
-              <div className="rounded-xl border border-dashed border-border/60 bg-background/30 p-6 text-center text-xs text-muted-foreground">
-                Waiting for tick stream…
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm leading-relaxed">
-                  {analysis.recommendationText}
-                </div>
-                <div className="rounded-xl border border-border/60 bg-background/30 p-3">
-                  <div className="mb-1.5 flex items-center justify-between text-[10px] uppercase text-muted-foreground">
-                    <span>Buy / Sell pressure</span>
-                    <span className="num text-foreground">{analysis.buyPressure}% / {analysis.sellPressure}%</span>
-                  </div>
-                  <div className="flex h-2 overflow-hidden rounded-full bg-bear/30">
-                    <div className="bg-bull transition-all duration-500" style={{ width: `${analysis.buyPressure}%` }} />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
     </div>
   );
