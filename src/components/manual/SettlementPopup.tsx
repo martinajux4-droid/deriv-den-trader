@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { CheckCircle2, XCircle, X } from "lucide-react";
+import { CheckCircle2, XCircle, X, Trophy } from "lucide-react";
 
 export type SettlementResult = {
   profit: number;
@@ -13,12 +13,13 @@ export type SettlementResult = {
 export function SettlementPopup({ result, onClose }: { result: SettlementResult; onClose: () => void }) {
   useEffect(() => {
     if (!result) return;
-    const t = setTimeout(onClose, 5000);
+    const t = setTimeout(onClose, 6000);
     return () => clearTimeout(t);
   }, [result, onClose]);
 
   if (!result) return null;
   const won = result.profit > 0;
+  const isSession = result.contract_type.includes("SESSION");
   return (
     <div className="pointer-events-none fixed inset-0 z-[100] flex items-start justify-center pt-24 px-4 animate-fade-in">
       <div className={`pointer-events-auto relative w-full max-w-sm overflow-hidden rounded-2xl border-2 p-5 backdrop-blur-xl ${
@@ -31,11 +32,11 @@ export function SettlementPopup({ result, onClose }: { result: SettlementResult;
         </button>
         <div className="flex items-center gap-3">
           <div className={`grid h-12 w-12 place-items-center rounded-full ${won ? "bg-bull/25 text-bull" : "bg-bear/25 text-bear"}`}>
-            {won ? <CheckCircle2 className="h-7 w-7" /> : <XCircle className="h-7 w-7" />}
+            {isSession ? <Trophy className="h-7 w-7" /> : won ? <CheckCircle2 className="h-7 w-7" /> : <XCircle className="h-7 w-7" />}
           </div>
           <div>
             <div className={`text-[11px] uppercase tracking-[0.2em] font-bold ${won ? "text-bull" : "text-bear"}`}>
-              {won ? "Trade Won" : result.profit < 0 ? "Trade Lost" : "Even"}
+              {isSession ? "Session Complete" : won ? "Trade Won" : result.profit < 0 ? "Trade Lost" : "Even"}
             </div>
             <div className={`num text-2xl font-extrabold ${won ? "text-bull" : "text-bear"}`}>
               {won ? "+" : ""}{result.profit.toFixed(2)} {result.currency || ""}
@@ -43,9 +44,19 @@ export function SettlementPopup({ result, onClose }: { result: SettlementResult;
           </div>
         </div>
         <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-          <Stat label="Type" value={result.contract_type} />
-          <Stat label="Entry" value={result.entry_spot != null ? Number(result.entry_spot).toFixed(3) : "—"} />
-          <Stat label="Exit" value={result.exit_spot != null ? Number(result.exit_spot).toFixed(3) : "—"} />
+          {isSession ? (
+            <>
+              <Stat label="Trades" value={result.stake} />
+              <Stat label="Wins" value={result.entry_spot ?? 0} />
+              <Stat label="Losses" value={result.exit_spot ?? 0} />
+            </>
+          ) : (
+            <>
+              <Stat label="Type" value={result.contract_type} />
+              <Stat label="Entry" value={result.entry_spot != null ? Number(result.entry_spot).toFixed(3) : "—"} />
+              <Stat label="Exit" value={result.exit_spot != null ? Number(result.exit_spot).toFixed(3) : "—"} />
+            </>
+          )}
         </div>
       </div>
     </div>
