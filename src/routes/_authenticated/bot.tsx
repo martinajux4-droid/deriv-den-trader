@@ -525,10 +525,11 @@ function BotPage() {
             <div><Label>Barrier digit (0-9)</Label><Input className="num" value={barrier} onChange={(e) => setBarrier(e.target.value)} /></div>
           )}
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             <div><Label>Take profit</Label><Input className="num" value={tp} onChange={(e) => setTp(e.target.value)} /></div>
             <div><Label>Max losses</Label><Input className="num" value={maxLosses} onChange={(e) => setMaxLosses(e.target.value)} /></div>
             <div><Label>Min conf %</Label><Input className="num" value={minConfidence} onChange={(e) => setMinConfidence(e.target.value)} /></div>
+            <div><Label>Max trades</Label><Input className="num" value={maxTrades} onChange={(e) => setMaxTrades(e.target.value)} /></div>
           </div>
 
             <p className="flex items-center gap-1 pt-1 text-[10px] text-muted-foreground">
