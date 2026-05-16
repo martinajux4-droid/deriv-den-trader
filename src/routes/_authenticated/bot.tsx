@@ -22,6 +22,7 @@ import { BotCommandCenter } from "@/components/BotCommandCenter";
 import { RiskManagementSetup, assessRisk, type RiskValues } from "@/components/RiskManagementSetup";
 import { cn } from "@/lib/utils";
 import { playBoot, playExecute, playProfit, playLoss, startScanLoop, stopScanLoop, primeAudio } from "@/lib/audio-engine";
+import { MultiMarketScanner, type ScannerSignal } from "@/components/MultiMarketScanner";
 
 export const Route = createFileRoute("/_authenticated/bot")({
   component: BotPage,
@@ -80,6 +81,8 @@ function BotPage() {
   const tpFiredRef = useRef(false);
   const runnerRef = useRef<BotRunner | null>(null);
   const runIdRef = useRef<string | null>(null);
+  const autoPausedRef = useRef(false);
+  const [bestSignal, setBestSignal] = useState<ScannerSignal | null>(null);
 
   const meta = useMemo(() => STRATEGIES.find((s) => s.id === strategy)!, [strategy]);
 
@@ -298,6 +301,25 @@ function BotPage() {
 
   useEffect(() => () => { runnerRef.current?.stop("Page closed"); stopScanLoop(); }, []);
 
+  // Auto pause/resume based on multi-market scanner confidence:
+  //  < 58%  → pause (market weakening), finish any active trade
+  //  ≥ 61%  → resume if we were the ones who paused
+  useEffect(() => {
+    if (!running || !runnerRef.current || !bestSignal) return;
+    const r = runnerRef.current;
+    if (!paused && bestSignal.confidence < 58) {
+      autoPausedRef.current = true;
+      r.pause();
+      setPaused(true);
+      toast.warning(`AI paused · ${bestSignal.name} ${bestSignal.confidence}% · waiting for confirmation`);
+    } else if (paused && autoPausedRef.current && bestSignal.confidence >= 61) {
+      autoPausedRef.current = false;
+      r.resume();
+      setPaused(false);
+      toast.success(`AI resumed · ${bestSignal.name} ${bestSignal.confidence}% confidence`);
+    }
+  }, [bestSignal, running, paused]);
+
   // Allow the TP modal "Stop Bot" button to stop the bot from anywhere
   useEffect(() => {
     const onStop = () => runnerRef.current?.stop("Stopped from celebration");
@@ -326,6 +348,20 @@ function BotPage() {
         currency={balance?.currency || "USD"}
         assessment={assessment}
         locked={running}
+      />
+
+      {/* MULTI-MARKET AI SCANNER */}
+      <MultiMarketScanner
+        activeSymbol={symbol}
+        onSelectMarket={(s) => {
+          if (running) {
+            toast.info(`Stop the bot to switch market to ${s}`);
+            return;
+          }
+          setSymbol(s);
+          toast.success(`Market locked: ${s}`);
+        }}
+        onBestSignal={setBestSignal}
       />
 
       {/* HERO COMMAND CENTER */}
