@@ -19,6 +19,7 @@ import { AlertTriangle, Settings2, ChevronDown, Brain, TrendingUp, Hash, Sigma, 
 import { setBotStatus, emitBotEvent, emitTakeProfit } from "@/hooks/use-bot-status";
 import { BotLaunchOverlay } from "@/components/BotLaunchOverlay";
 import { BotCommandCenter } from "@/components/BotCommandCenter";
+import { MarketScanOverlay } from "@/components/MarketScanOverlay";
 import { cn } from "@/lib/utils";
 import { playBoot, playExecute, playProfit, playLoss, startScanLoop, stopScanLoop, primeAudio } from "@/lib/audio-engine";
 
@@ -69,6 +70,8 @@ function BotPage() {
   const [, setLogs] = useState<{ t: number; msg: string; tone?: string }[]>([]);
   const [launching, setLaunching] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
+  const autoPausedRef = useRef(false);
   const [pnl, setPnl] = useState(0);
   const [trades, setTrades] = useState(0);
   const [wins, setWins] = useState(0);
@@ -85,13 +88,20 @@ function BotPage() {
   const log = (msg: string, tone?: string) =>
     setLogs((l) => [{ t: Date.now(), msg, tone }, ...l].slice(0, 200));
 
-  const start = async () => {
+  const beginScan = () => {
     if (!client || !active || !user) { toast.error("Connect a Deriv account first"); return; }
+    setScanOpen(true);
+  };
+
+  const start = async (overrideSymbol?: string) => {
+    if (!client || !active || !user) { toast.error("Connect a Deriv account first"); return; }
+    const sym = overrideSymbol || symbol;
+    if (overrideSymbol && overrideSymbol !== symbol) setSymbol(overrideSymbol);
     primeAudio();
     playBoot();
     setLaunching(true);
     const cfg: StrategyConfig = {
-      type: strategy, symbol, stake: Number(stake),
+      type: strategy, symbol: sym, stake: Number(stake),
       duration: Number(duration), duration_unit: unit,
       barrier: Number(barrier),
       martingale: Number(martingale),
@@ -114,17 +124,18 @@ function BotPage() {
     setRunning(true); setPaused(false); setLogs([]); setPnl(0); setTrades(0);
     setWins(0); setLosses(0); setActiveTrades(0);
     streakRef.current = 0; bestStreakRef.current = 0; tpFiredRef.current = false;
+    autoPausedRef.current = false;
     const baseEquity = balance?.balance ?? 0;
     const accountType: "Demo" | "Real" = active.is_virtual ? "Demo" : "Real";
     setBotStatus({
-      running: true, paused: false, strategy, symbol,
+      running: true, paused: false, strategy, symbol: sym,
       pnl: 0, trades: 0, wins: 0, losses: 0, streak: 0, bestStreak: 0, peak: 0,
       baseEquity, currency: balance?.currency || "USD",
       takeProfit: Number(tp) || undefined, stopLoss: Number(sl) || undefined,
       confidence: 0, direction: "WAIT", activeTrades: 0,
       accountType, loginid: active.loginid, startedAt: Date.now(),
     });
-    emitBotEvent({ kind: "info", message: `Bot online · ${strategy} on ${symbol} · ${accountType} account`, symbol });
+    emitBotEvent({ kind: "info", message: `Bot online · ${strategy} on ${sym} · ${accountType} account`, symbol: sym });
 
     const runner = new BotRunner(
       client, cfg, balance?.currency || "USD",
@@ -275,6 +286,23 @@ function BotPage() {
 
   useEffect(() => () => { runnerRef.current?.stop("Page closed"); stopScanLoop(); }, []);
 
+  // Auto pause/resume based on live AI confidence (≥61 execute · <58 pause)
+  useEffect(() => {
+    const r = runnerRef.current;
+    if (!r || !running || !analysis) return;
+    if (analysis.confidence < 58 && !paused) {
+      autoPausedRef.current = true;
+      r.pause();
+      setPaused(true);
+      emitBotEvent({ kind: "info", message: `Auto-paused · confidence ${analysis.confidence}% below 58%`, symbol });
+    } else if (analysis.confidence >= 61 && paused && autoPausedRef.current) {
+      autoPausedRef.current = false;
+      r.resume();
+      setPaused(false);
+      emitBotEvent({ kind: "info", message: `Resumed · confidence ${analysis.confidence}% ≥ 61%`, symbol });
+    }
+  }, [analysis, running, paused, symbol]);
+
   // Allow the TP modal "Stop Bot" button to stop the bot from anywhere
   useEffect(() => {
     const onStop = () => runnerRef.current?.stop("Stopped from celebration");
@@ -285,6 +313,14 @@ function BotPage() {
   return (
     <div className="space-y-6">
       <BotLaunchOverlay open={launching} onDone={() => setLaunching(false)} />
+      <MarketScanOverlay
+        open={scanOpen}
+        onClose={() => setScanOpen(false)}
+        onExecute={(sym) => {
+          setScanOpen(false);
+          start(sym);
+        }}
+      />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -317,7 +353,7 @@ function BotPage() {
           exposure: Number(stake) || 0,
           currency: balance?.currency || "USD",
         }}
-        onStart={start}
+        onStart={beginScan}
         onPause={togglePause}
         onStop={stop}
         onEmergency={emergency}
