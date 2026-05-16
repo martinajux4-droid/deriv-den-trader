@@ -22,7 +22,6 @@ import { BotCommandCenter } from "@/components/BotCommandCenter";
 import { RiskManagementSetup, assessRisk, type RiskValues } from "@/components/RiskManagementSetup";
 import { cn } from "@/lib/utils";
 import { playBoot, playExecute, playProfit, playLoss, startScanLoop, stopScanLoop, primeAudio } from "@/lib/audio-engine";
-import { MultiMarketScanner, type ScannerSignal } from "@/components/MultiMarketScanner";
 
 export const Route = createFileRoute("/_authenticated/bot")({
   component: BotPage,
