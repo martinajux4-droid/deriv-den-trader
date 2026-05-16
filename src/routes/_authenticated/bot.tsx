@@ -80,8 +80,6 @@ function BotPage() {
   const tpFiredRef = useRef(false);
   const runnerRef = useRef<BotRunner | null>(null);
   const runIdRef = useRef<string | null>(null);
-  const autoPausedRef = useRef(false);
-  const [bestSignal, setBestSignal] = useState<ScannerSignal | null>(null);
 
   const meta = useMemo(() => STRATEGIES.find((s) => s.id === strategy)!, [strategy]);
 
