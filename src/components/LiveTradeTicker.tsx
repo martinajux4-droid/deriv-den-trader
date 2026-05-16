@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Activity, ArrowDownRight, ArrowUpRight, Target, DollarSign, Pause, Play } from "lucide-react";
 import { useDeriv } from "@/hooks/use-deriv";
 import { Button } from "@/components/ui/button";
