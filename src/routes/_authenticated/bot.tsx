@@ -243,6 +243,9 @@ function BotPage() {
           log(`Stopped: ${e.reason}`, "info");
           setRunning(false);
           stopScanLoop();
+          if (e.reason?.includes("Max trades")) {
+            toast.success(`Target reached · ${e.reason} · PnL ${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)} ${balance?.currency || ""}`);
+          }
           emitBotEvent({ kind: "info", message: `Bot stopped · ${e.reason}` });
           setBotStatus({ running: false });
         }
