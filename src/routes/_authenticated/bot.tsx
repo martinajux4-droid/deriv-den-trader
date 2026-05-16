@@ -311,6 +311,7 @@ function BotPage() {
   return (
     <div className="space-y-6">
       <BotLaunchOverlay open={launching} onDone={() => setLaunching(false)} />
+      <SettlementPopup result={settlement} onClose={() => setSettlement(null)} />
       <MarketScanOverlay
         open={scanOpen}
         onClose={() => setScanOpen(false)}
