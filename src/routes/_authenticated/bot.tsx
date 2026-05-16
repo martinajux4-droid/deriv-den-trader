@@ -358,8 +358,8 @@ function BotPage() {
         onEmergency={emergency}
       />
 
-      {/* TWO-COLUMN: settings (collapsible) + live feed */}
-      <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
+      {/* Settings (collapsible) */}
+      <div className="grid gap-6">
         {/* LEFT: configuration */}
         <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
           <Card className="card-premium space-y-3 p-5">
@@ -516,41 +516,6 @@ function BotPage() {
             </CollapsibleContent>
           </Card>
         </Collapsible>
-
-        {/* RIGHT: live activity */}
-        <div className="space-y-4">
-          <div className="card-premium overflow-hidden p-5">
-            <div className="mb-3 flex items-center gap-2">
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent/15 text-accent">
-                <Brain className="h-4 w-4" />
-              </span>
-              <div>
-                <div className="text-sm font-semibold">AI Market Read · {symbol}</div>
-                <div className="text-[11px] text-muted-foreground">Reasoning updates every tick</div>
-              </div>
-            </div>
-            {!analysis ? (
-              <div className="rounded-xl border border-dashed border-border/60 bg-background/30 p-6 text-center text-xs text-muted-foreground">
-                Waiting for tick stream…
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm leading-relaxed">
-                  {analysis.recommendationText}
-                </div>
-                <div className="rounded-xl border border-border/60 bg-background/30 p-3">
-                  <div className="mb-1.5 flex items-center justify-between text-[10px] uppercase text-muted-foreground">
-                    <span>Buy / Sell pressure</span>
-                    <span className="num text-foreground">{analysis.buyPressure}% / {analysis.sellPressure}%</span>
-                  </div>
-                  <div className="flex h-2 overflow-hidden rounded-full bg-bear/30">
-                    <div className="bg-bull transition-all duration-500" style={{ width: `${analysis.buyPressure}%` }} />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
     </div>
   );
