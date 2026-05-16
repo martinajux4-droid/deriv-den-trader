@@ -22,8 +22,6 @@ type Props = {
   currency: string;
   analysis: Analysis | null;
   canStart: boolean;
-  riskValidated: boolean;
-  riskLabel?: string;
   protection?: {
     dailyRemaining: number;
     drawdown: number;
