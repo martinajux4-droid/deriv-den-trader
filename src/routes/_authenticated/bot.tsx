@@ -328,20 +328,6 @@ function BotPage() {
         locked={running}
       />
 
-      {/* MULTI-MARKET AI SCANNER */}
-      <MultiMarketScanner
-        activeSymbol={symbol}
-        onSelectMarket={(s) => {
-          if (running) {
-            toast.info(`Stop the bot to switch market to ${s}`);
-            return;
-          }
-          setSymbol(s);
-          toast.success(`Market locked: ${s}`);
-        }}
-        onBestSignal={setBestSignal}
-      />
-
       {/* HERO COMMAND CENTER */}
       <BotCommandCenter
         running={running}
