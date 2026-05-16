@@ -26,7 +26,7 @@ type Snap = {
 };
 
 export function LiveTradeTicker({
-  trade, onClear, paused, onPause, onResume, sellAfterTicks,
+  trade, onClear, paused, onPause, onResume, sellAfterTicks, onBotStop, onSettlement,
 }: {
   trade: LiveTradeInfo;
   onClear: () => void;
@@ -34,6 +34,15 @@ export function LiveTradeTicker({
   onPause?: () => void;
   onResume?: () => void;
   sellAfterTicks?: number;
+  onBotStop?: () => void;
+  onSettlement?: (result: {
+    profit: number;
+    contract_type: string;
+    stake: number;
+    entry_spot: number | null;
+    exit_spot: number | null;
+    currency: string;
+  }) => void;
 }) {
   const { client } = useDeriv();
   const [selling, setSelling] = useState(false);
