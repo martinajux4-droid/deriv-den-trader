@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Radar, Zap, CheckCircle2, X, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useDeriv } from "@/hooks/use-deriv";
+import { analyze } from "@/lib/ai-analysis";
 
 const SCAN_MARKETS: { symbol: string; label: string }[] = [
   { symbol: "R_10",   label: "Volatility 10" },
@@ -31,13 +33,14 @@ type Props = {
 };
 
 export function MarketScanOverlay({ open, onClose, onExecute }: Props) {
+  const { client, status } = useDeriv();
   const [rows, setRows] = useState<Row[]>([]);
   const [phase, setPhase] = useState<"scanning" | "locked">("scanning");
   const [lockedSymbol, setLockedSymbol] = useState<string | null>(null);
   const firedRef = useRef(false);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !client || status !== "open") return;
     firedRef.current = false;
     setPhase("scanning");
     setLockedSymbol(null);
@@ -50,43 +53,66 @@ export function MarketScanOverlay({ open, onClose, onExecute }: Props) {
       }))
     );
 
-    // Stagger the scan: start each market sequentially, then animate its confidence upward.
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    SCAN_MARKETS.forEach((m, i) => {
-      timers.push(
-        setTimeout(() => {
-          setRows((rs) =>
-            rs.map((r) => (r.symbol === m.symbol ? { ...r, status: "scanning" } : r))
-          );
-        }, 200 + i * 220)
-      );
-    });
+    // Real-time scan: fetch tick history for each market, then keep a live
+    // tick subscription. Recompute confidence + direction on every update.
+    const quotesBySymbol = new Map<string, number[]>();
+    const unsubs: Array<() => void> = [];
+    let cancelled = false;
 
-    // Tick: progressively raise confidences with noise, then settle.
-    const targets = new Map<string, { target: number; dir: "RISE" | "FALL" }>();
-    SCAN_MARKETS.forEach((m) => {
-      // bias one or two markets to clearly cross 61%
-      const target = 35 + Math.random() * 45; // 35..80
-      targets.set(m.symbol, { target, dir: Math.random() > 0.5 ? "RISE" : "FALL" });
-    });
-
-    const interval = setInterval(() => {
+    const recompute = (sym: string) => {
+      const q = quotesBySymbol.get(sym);
+      if (!q || q.length < 12) return;
+      const a = analyze(q);
+      if (!a) return;
+      const dir: Row["direction"] =
+        a.recommendation === "RISE" || a.recommendation === "FALL"
+          ? a.recommendation
+          : a.sentiment === "Bullish" ? "RISE" : a.sentiment === "Bearish" ? "FALL" : "WAIT";
       setRows((rs) =>
-        rs.map((r) => {
-          if (r.status === "queued") return r;
-          const t = targets.get(r.symbol)!;
-          const next = Math.min(t.target, r.confidence + 4 + Math.random() * 6);
-          const status = next >= t.target - 0.5 ? "done" : "scanning";
-          return { ...r, confidence: Math.round(next), direction: t.dir, status };
-        })
+        rs.map((r) =>
+          r.symbol === sym
+            ? { ...r, status: "done", confidence: a.confidence, direction: dir }
+            : r,
+        ),
       );
-    }, 280);
+    };
+
+    SCAN_MARKETS.forEach((m, i) => {
+      const delay = i * 120;
+      setTimeout(async () => {
+        if (cancelled) return;
+        setRows((rs) => rs.map((r) => (r.symbol === m.symbol ? { ...r, status: "scanning" } : r)));
+        try {
+          const res = await client.send({
+            ticks_history: m.symbol, count: 80, end: "latest", style: "ticks",
+          });
+          if (cancelled) return;
+          const prices: number[] = (res.history?.prices ?? []).map((p: any) => Number(p));
+          quotesBySymbol.set(m.symbol, prices);
+          recompute(m.symbol);
+          const off = await client.subscribeTicks(m.symbol, (t) => {
+            if (cancelled) return;
+            const cur = quotesBySymbol.get(m.symbol) || [];
+            const next = [...cur, t.quote].slice(-80);
+            quotesBySymbol.set(m.symbol, next);
+            recompute(m.symbol);
+          });
+          if (cancelled) { off(); return; }
+          unsubs.push(off);
+        } catch (e) {
+          // mark as done with zero — won't be picked
+          if (!cancelled) {
+            setRows((rs) => rs.map((r) => r.symbol === m.symbol ? { ...r, status: "done" } : r));
+          }
+        }
+      }, delay);
+    });
 
     return () => {
-      timers.forEach(clearTimeout);
-      clearInterval(interval);
+      cancelled = true;
+      unsubs.forEach((u) => { try { u(); } catch {} });
     };
-  }, [open]);
+  }, [open, client, status]);
 
   // When the best market crosses 61%, lock + fire execute after a beat.
   useEffect(() => {
@@ -96,10 +122,6 @@ export function MarketScanOverlay({ open, onClose, onExecute }: Props) {
       firedRef.current = true;
       setLockedSymbol(best.symbol);
       setPhase("locked");
-      const t = setTimeout(() => {
-        onExecute(best.symbol);
-      }, 1400);
-      return () => clearTimeout(t);
     }
   }, [rows, open, onExecute]);
 
