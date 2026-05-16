@@ -57,7 +57,7 @@ function BotPage() {
   const [maxLosses, setMaxLosses] = useState("3");
   const [minConfidence, setMinConfidence] = useState("70");
   const [dailyLossLimit, setDailyLossLimit] = useState("25");
-  const [maxTrades, setMaxTrades] = useState("10");
+  const [maxTrades, setMaxTrades] = useState("2");
 
   const [running, setRunning] = useState(false);
   const [paused, setPaused] = useState(false);
