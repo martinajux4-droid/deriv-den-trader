@@ -295,16 +295,6 @@ function BotPage() {
         </div>
       </div>
 
-      {/* RISK MANAGEMENT — required before start */}
-      <RiskManagementSetup
-        values={riskValues}
-        onChange={onRiskChange}
-        balance={balance?.balance}
-        currency={balance?.currency || "USD"}
-        assessment={assessment}
-        locked={running}
-      />
-
       {/* HERO COMMAND CENTER */}
       <BotCommandCenter
         running={running}
@@ -321,8 +311,6 @@ function BotPage() {
         currency={balance?.currency || "USD"}
         analysis={analysis}
         canStart={!!(client && active && user)}
-        riskValidated={assessment.valid}
-        riskLabel={assessment.label}
         protection={{
           dailyRemaining: Math.max(0, Number(dailyLossLimit) + Math.min(0, pnl)),
           drawdown: Math.min(0, pnl),
