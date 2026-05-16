@@ -367,7 +367,13 @@ function BotPage() {
       />
 
       {liveTrade && (
-        <LiveTradeTicker trade={liveTrade} onClear={() => setLiveTrade(null)} />
+        <LiveTradeTicker
+          trade={liveTrade}
+          onClear={() => setLiveTrade(null)}
+          paused={paused}
+          onPause={togglePause}
+          onResume={togglePause}
+        />
       )}
 
       {/* Settings (collapsible) */}

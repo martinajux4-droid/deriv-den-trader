@@ -145,11 +145,24 @@ export function MarketScanOverlay({ open, onClose, onExecute }: Props) {
 
         {/* Top market highlight */}
         {top && (
-          <div className="relative mx-5 mt-4 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+          <div className={cn(
+            "relative mx-5 mt-4 rounded-2xl border p-4 transition-all",
+            phase === "locked"
+              ? "border-bull/70 bg-bull/15 shadow-[0_0_40px_-8px_oklch(0.74_0.18_150/0.8)] animate-pulse"
+              : "border-primary/30 bg-primary/5"
+          )}>
+            {phase === "locked" && (
+              <div className="absolute -top-2 left-4 rounded-full border border-bull/60 bg-bull px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-bull-foreground">
+                ★ Best market locked
+              </div>
+            )}
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Top market</div>
-                <div className="truncate text-lg font-semibold">{top.label}</div>
+                <div className={cn(
+                  "truncate text-lg font-semibold",
+                  phase === "locked" && "text-bull"
+                )}>{top.label}</div>
               </div>
               <div className="text-right">
                 <div className={cn(

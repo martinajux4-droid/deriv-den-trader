@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { Activity, ArrowDownRight, ArrowUpRight, Target } from "lucide-react";
+import { Activity, ArrowDownRight, ArrowUpRight, Target, DollarSign, Pause, Play } from "lucide-react";
 import { useDeriv } from "@/hooks/use-deriv";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export type LiveTradeInfo = {
@@ -23,8 +25,17 @@ type Snap = {
   barrier?: string | null;
 };
 
-export function LiveTradeTicker({ trade, onClear }: { trade: LiveTradeInfo; onClear: () => void }) {
+export function LiveTradeTicker({
+  trade, onClear, paused, onPause, onResume,
+}: {
+  trade: LiveTradeInfo;
+  onClear: () => void;
+  paused?: boolean;
+  onPause?: () => void;
+  onResume?: () => void;
+}) {
   const { client } = useDeriv();
+  const [selling, setSelling] = useState(false);
   const [snap, setSnap] = useState<Snap>({
     entry: null, current: null, exit: null, profit: 0, bid: null,
     isExpired: false, isSold: false, ticksRemaining: null, barrier: null,
@@ -80,6 +91,20 @@ export function LiveTradeTicker({ trade, onClear }: { trade: LiveTradeInfo; onCl
     isCall ? delta > 0 :
     isPut  ? delta < 0 :
     snap.profit > 0;
+
+  const sellNow = async () => {
+    if (!client || snap.isSold || selling) return;
+    setSelling(true);
+    try {
+      const price = snap.bid != null ? Math.max(0, snap.bid) : 0;
+      await client.send({ sell: trade.contract_id, price });
+      toast.success(`Take profit · selling at ${snap.profit >= 0 ? "+" : ""}${snap.profit.toFixed(2)} ${trade.currency}`);
+    } catch (e: any) {
+      toast.error(e?.error?.message || "Could not sell contract");
+    } finally {
+      setSelling(false);
+    }
+  };
 
   return (
     <div className="rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/5 via-card/80 to-accent/5 p-4 shadow-[0_0_30px_-12px_oklch(0.82_0.15_85/0.55)]">
@@ -138,6 +163,35 @@ export function LiveTradeTicker({ trade, onClear }: { trade: LiveTradeInfo; onCl
       {snap.barrier && (
         <div className="mt-2 text-center text-[10px] text-muted-foreground">
           Barrier: <span className="num font-semibold text-foreground">{snap.barrier}</span>
+        </div>
+      )}
+
+      {/* Quick controls */}
+      {!snap.isSold && (
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <Button
+            size="sm"
+            onClick={sellNow}
+            disabled={selling}
+            className={cn(
+              "h-9 text-xs font-semibold",
+              snap.profit >= 0
+                ? "bg-bull text-bull-foreground hover:bg-bull/90"
+                : "bg-warning text-warning-foreground hover:bg-warning/90"
+            )}
+          >
+            <DollarSign className="mr-1 h-3.5 w-3.5" />
+            {selling ? "Selling…" : `Take profit now (${snap.profit >= 0 ? "+" : ""}${snap.profit.toFixed(2)})`}
+          </Button>
+          {paused ? (
+            <Button size="sm" variant="secondary" onClick={onResume} className="h-9 text-xs">
+              <Play className="mr-1 h-3.5 w-3.5" /> Resume bot
+            </Button>
+          ) : (
+            <Button size="sm" variant="outline" onClick={onPause} className="h-9 text-xs">
+              <Pause className="mr-1 h-3.5 w-3.5" /> Pause bot
+            </Button>
+          )}
         </div>
       )}
     </div>
