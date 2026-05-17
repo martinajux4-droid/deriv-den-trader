@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { Brain, Pause, Square, Zap, Sparkles, Shield, Lock, ShieldCheck, AlertTriangle, Radar } from "lucide-react";
+import { Pause, Square, Zap, Sparkles, Lock, Radar } from "lucide-react";
 import type { Analysis } from "@/lib/ai-analysis";
 import type { BotState } from "@/lib/bot-engine";
 import { Button } from "@/components/ui/button";
 import { useAnimatedNumber } from "@/hooks/use-animated-number";
 import { cn } from "@/lib/utils";
+import { LiveMarketPulse } from "./LiveMarketPulse";
 
 type Props = {
   running: boolean;
@@ -152,23 +153,8 @@ export function BotCommandCenter(p: Props) {
         </div>
       </div>
 
-      {/* LIVE PROTECTION CHIPS */}
-      {p.running && p.protection && (
-        <div className="relative mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <ProtectionChip icon={<ShieldCheck className="h-3.5 w-3.5" />} label="Safe Mode" value="ACTIVE" tone="bull" pulse />
-          <ProtectionChip
-            icon={<Shield className="h-3.5 w-3.5" />} label="Daily loss remaining"
-            value={`${p.protection.dailyRemaining.toFixed(2)} ${p.protection.currency}`}
-            tone={p.protection.dailyRemaining > 0 ? "primary" : "bear"}
-          />
-          <ProtectionChip
-            icon={<AlertTriangle className="h-3.5 w-3.5" />} label="Current drawdown"
-            value={`${p.protection.drawdown.toFixed(2)} ${p.protection.currency}`}
-            tone={p.protection.drawdown < 0 ? "warn" : "bull"}
-          />
-          <ProtectionChip icon={<Brain className="h-3.5 w-3.5" />} label="AI Defense" value="ENABLED" tone="primary" pulse />
-        </div>
-      )}
+      {/* LIVE MARKET PULSE */}
+      {p.running && <LiveMarketPulse symbol={p.symbol} />}
 
       {/* High-signal banner */}
       {highSignal && p.analysis && (
