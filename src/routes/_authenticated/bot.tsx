@@ -58,6 +58,7 @@ function BotPage() {
   const [minConfidence, setMinConfidence] = useState("70");
   const [dailyLossLimit, setDailyLossLimit] = useState("25");
   const [maxTrades, setMaxTrades] = useState("2");
+  const [scanSeconds, setScanSeconds] = useState("30");
 
   const [running, setRunning] = useState(false);
   const [paused, setPaused] = useState(false);
@@ -368,6 +369,7 @@ function BotPage() {
       )}
       <MarketScanOverlay
         open={scanOpen}
+        scanSeconds={Math.max(5, Number(scanSeconds) || 30)}
         onClose={() => setScanOpen(false)}
         onExecute={(sym) => {
           setScanOpen(false);
@@ -381,6 +383,18 @@ function BotPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             One-click automated trading · {active ? (active.is_virtual ? "Demo" : "Live") + " · " + active.loginid : "no account connected"}
           </p>
+        </div>
+        <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/60 px-3 py-2 backdrop-blur-sm">
+          <Label className="m-0 text-[10px] uppercase tracking-widest text-muted-foreground">Scan timeframe</Label>
+          <Select value={scanSeconds} onValueChange={setScanSeconds}>
+            <SelectTrigger className="h-8 w-[110px] num text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="30">30 seconds</SelectItem>
+              <SelectItem value="60">60 seconds</SelectItem>
+              <SelectItem value="120">120 seconds</SelectItem>
+              <SelectItem value="1000">1000 seconds</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
