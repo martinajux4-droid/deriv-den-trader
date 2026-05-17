@@ -181,23 +181,3 @@ export function BotCommandCenter(p: Props) {
   );
 }
 
-function ProtectionChip({ icon, label, value, tone, pulse }: {
-  icon: React.ReactNode; label: string; value: string;
-  tone: "bull" | "bear" | "warn" | "primary"; pulse?: boolean;
-}) {
-  const map = {
-    bull: "border-bull/40 bg-bull/8 text-bull",
-    bear: "border-bear/40 bg-bear/10 text-bear",
-    warn: "border-warning/40 bg-warning/10 text-warning",
-    primary: "border-primary/40 bg-primary/8 text-primary",
-  } as const;
-  return (
-    <div className={cn("flex items-center gap-2 rounded-xl border px-3 py-2 backdrop-blur-sm", map[tone])}>
-      <span className={cn("grid h-7 w-7 place-items-center rounded-lg bg-background/40", pulse && "animate-pulse")}>{icon}</span>
-      <div className="min-w-0">
-        <div className="text-[9px] uppercase tracking-widest text-muted-foreground">{label}</div>
-        <div className="num truncate text-[12px] font-semibold">{value}</div>
-      </div>
-    </div>
-  );
-}
