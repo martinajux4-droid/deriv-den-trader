@@ -79,22 +79,29 @@ export function LiveTradeTicker({
           : null,
         barrier: c.barrier ?? null,
       });
-      // Auto-sell after the configured number of ticks have passed
-      const threshold = Math.max(1, Number(sellAfterTicks) || 1);
+      // Sell immediately as soon as the contract becomes valid to sell
+      void ticksPassed;
       if (
         !autoSoldRef.current &&
         !c.is_sold &&
-        c.is_valid_to_sell &&
-        ticksPassed >= threshold
+        c.is_valid_to_sell
       ) {
         autoSoldRef.current = true;
         const price = c.bid_price != null ? Number(c.bid_price) : 0;
         client
           .send({ sell: trade.contract_id, price })
           .then(() => {
-            toast.success(
-              `Auto-sold after ${threshold} tick${threshold > 1 ? "s" : ""} · ${Number(c.profit ?? 0) >= 0 ? "+" : ""}${Number(c.profit ?? 0).toFixed(2)} ${trade.currency}`
-            );
+            const p = Number(c.profit ?? 0);
+            toast.success(`Auto-sold instantly · ${p >= 0 ? "+" : ""}${p.toFixed(2)} ${trade.currency}`);
+            onSettlement?.({
+              profit: p,
+              contract_type: trade.contract_type,
+              stake: trade.stake,
+              entry_spot: c.entry_spot != null ? Number(c.entry_spot) : null,
+              exit_spot: c.current_spot != null ? Number(c.current_spot) : null,
+              currency: trade.currency,
+            });
+            onBotStop?.();
           })
           .catch((e: any) => {
             autoSoldRef.current = false;
