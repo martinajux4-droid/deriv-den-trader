@@ -30,13 +30,16 @@ type Props = {
   open: boolean;
   onClose: () => void;
   onExecute: (symbol: string) => void;
+  scanSeconds?: number;
 };
 
-export function MarketScanOverlay({ open, onClose, onExecute }: Props) {
+export function MarketScanOverlay({ open, onClose, onExecute, scanSeconds = 30 }: Props) {
   const { client, status } = useDeriv();
   const [rows, setRows] = useState<Row[]>([]);
   const [phase, setPhase] = useState<"scanning" | "locked">("scanning");
   const [lockedSymbol, setLockedSymbol] = useState<string | null>(null);
+  const [elapsed, setElapsed] = useState(0);
+  const startedAtRef = useRef<number>(0);
   const firedRef = useRef(false);
 
   useEffect(() => {
@@ -44,6 +47,11 @@ export function MarketScanOverlay({ open, onClose, onExecute }: Props) {
     firedRef.current = false;
     setPhase("scanning");
     setLockedSymbol(null);
+    setElapsed(0);
+    startedAtRef.current = Date.now();
+    const timer = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startedAtRef.current) / 1000));
+    }, 250);
     setRows(
       SCAN_MARKETS.map((m) => ({
         ...m,
@@ -111,19 +119,21 @@ export function MarketScanOverlay({ open, onClose, onExecute }: Props) {
     return () => {
       cancelled = true;
       unsubs.forEach((u) => { try { u(); } catch {} });
+      clearInterval(timer);
     };
   }, [open, client, status]);
 
-  // When the best market crosses 61%, lock + fire execute after a beat.
+  // Lock only AFTER the chosen scan window completes — then pick the best market.
   useEffect(() => {
     if (!open || firedRef.current) return;
+    if (elapsed < scanSeconds) return;
     const best = [...rows].sort((a, b) => b.confidence - a.confidence)[0];
-    if (best && best.confidence >= 61) {
+    if (best && best.confidence > 0) {
       firedRef.current = true;
       setLockedSymbol(best.symbol);
       setPhase("locked");
     }
-  }, [rows, open, onExecute]);
+  }, [rows, open, onExecute, elapsed, scanSeconds]);
 
   if (!open) return null;
 
