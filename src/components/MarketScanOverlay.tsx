@@ -163,7 +163,7 @@ export function MarketScanOverlay({ open, onClose, onExecute, scanSeconds = 30 }
               <div className="text-[11px] text-muted-foreground">
                 {phase === "locked"
                   ? `Best market: ${SCAN_MARKETS.find((m) => m.symbol === lockedSymbol)?.label}`
-                  : "Ranking 10 markets by live confidence · pause threshold 58% · execute ≥61%"}
+                  : `Live ranking · ${elapsed}s / ${scanSeconds}s · locks best at finish`}
               </div>
             </div>
           </div>
@@ -275,7 +275,7 @@ export function MarketScanOverlay({ open, onClose, onExecute, scanSeconds = 30 }
           <span>
             {phase === "locked"
               ? "Auto-executing in a moment…"
-              : "Waiting for the first market to cross 61% confidence"}
+              : `Locking the best market in ${Math.max(0, scanSeconds - elapsed)}s`}
           </span>
           {phase === "locked" && (
             <Button
