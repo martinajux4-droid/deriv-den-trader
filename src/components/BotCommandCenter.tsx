@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import { Pause, Square, Zap, Sparkles, Lock, Radar } from "lucide-react";
+import { Sparkles, Lock, Radar } from "lucide-react";
 import type { Analysis } from "@/lib/ai-analysis";
 import type { BotState } from "@/lib/bot-engine";
 import { Button } from "@/components/ui/button";
-import { useAnimatedNumber } from "@/hooks/use-animated-number";
 import { cn } from "@/lib/utils";
 import { LiveMarketPulse } from "./LiveMarketPulse";
 
@@ -46,10 +45,6 @@ const STATE_LABEL: Record<BotState, string> = {
 };
 
 export function BotCommandCenter(p: Props) {
-  const animatedPnl = useAnimatedNumber(p.pnl);
-  const winRate = p.trades > 0 ? Math.round((p.wins / p.trades) * 100) : 0;
-  const tone = p.pnl > 0 ? "bull" : p.pnl < 0 ? "bear" : "neutral";
-
   // High-confidence signal pulse
   const highSignal = !!(p.running && p.analysis && p.analysis.confidence >= 75 && p.analysis.recommendation !== "WAIT");
   const [flash, setFlash] = useState(false);
@@ -88,24 +83,9 @@ export function BotCommandCenter(p: Props) {
           </div>
 
           <div>
-            <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Live profit</div>
-            <div className={cn(
-              "num mt-1 text-2xl font-semibold tracking-tight sm:text-3xl",
-              tone === "bull" && "text-bull",
-              tone === "bear" && "text-bear",
-              tone === "neutral" && "text-foreground",
-            )}>
-              {animatedPnl >= 0 ? "+" : ""}{animatedPnl.toFixed(2)} <span className="text-xs text-muted-foreground">{p.currency}</span>
-            </div>
-            <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-              <span>{p.strategyLabel} · {p.symbol}</span>
-              <span>·</span>
-              <span>{p.trades} trades</span>
-              <span>·</span>
-              <span className="text-bull">{p.wins}W</span>
-              <span className="text-bear">{p.losses}L</span>
-              {p.trades > 0 && <><span>·</span><span>{winRate}% win</span></>}
-              {p.activeTrades > 0 && <><span>·</span><span className="text-accent">{p.activeTrades} open</span></>}
+            <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Strategy</div>
+            <div className="mt-1 text-lg font-semibold tracking-tight">
+              {p.strategyLabel} <span className="text-xs text-muted-foreground">· {p.symbol}</span>
             </div>
           </div>
         </div>
@@ -137,19 +117,7 @@ export function BotCommandCenter(p: Props) {
                   : "AI scans all volatility markets and executes when confidence ≥ 61%"}
               </p>
             </>
-          ) : (
-            <div className="grid grid-cols-3 gap-2">
-              <Button onClick={p.onPause} variant="secondary" size="lg" className="h-14">
-                <Pause className="mr-1 h-4 w-4" />{p.paused ? "Resume" : "Pause"}
-              </Button>
-              <Button onClick={p.onStop} variant="outline" size="lg" className="h-14">
-                <Square className="mr-1 h-4 w-4" /> Stop
-              </Button>
-              <Button onClick={p.onEmergency} variant="destructive" size="lg" className="h-14">
-                <Zap className="mr-1 h-4 w-4" /> Kill
-              </Button>
-            </div>
-          )}
+          ) : null}
         </div>
       </div>
 
