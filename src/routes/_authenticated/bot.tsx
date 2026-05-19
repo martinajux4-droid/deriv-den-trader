@@ -60,6 +60,13 @@ function BotPage() {
   const [maxTrades, setMaxTrades] = useState("2");
   const [scanSeconds, setScanSeconds] = useState("30");
 
+  // Loss Protection AI
+  const [pauseAfterLoss, setPauseAfterLoss] = useState("8");
+  const [recoveryConf, setRecoveryConf] = useState("85");
+  const [capitalProtection, setCapitalProtection] = useState(true);
+  const [smartRecovery, setSmartRecovery] = useState(true);
+  const [noTradeRisky, setNoTradeRisky] = useState(true);
+
   const [running, setRunning] = useState(false);
   const [paused, setPaused] = useState(false);
   const [state, setState] = useState<BotState>("idle");
@@ -112,6 +119,11 @@ function BotPage() {
       risk_mode: "normal" as RiskMode,
       stake_mode: "martingale",
       min_confidence: Number(minConfidence) || 65,
+      pause_after_loss_seconds: Math.max(0, Number(pauseAfterLoss) || 0),
+      recovery_min_confidence: Math.min(95, Math.max(50, Number(recoveryConf) || 85)),
+      capital_protection: capitalProtection,
+      smart_recovery: smartRecovery,
+      no_trade_when_risky: noTradeRisky,
     };
 
     const { data: run } = await supabase.from("bot_runs").insert({
@@ -553,6 +565,42 @@ function BotPage() {
             <div><Label>Max losses</Label><Input className="num" value={maxLosses} onChange={(e) => setMaxLosses(e.target.value)} /></div>
             <div><Label>Min conf %</Label><Input className="num" value={minConfidence} onChange={(e) => setMinConfidence(e.target.value)} /></div>
             <div><Label>Max trades</Label><Input className="num" value={maxTrades} onChange={(e) => setMaxTrades(e.target.value)} /></div>
+          </div>
+
+          {/* Loss Protection AI */}
+          <div className="rounded-2xl border border-bear/30 bg-gradient-to-br from-bear/5 via-background/40 to-warning/5 p-3">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="grid h-7 w-7 place-items-center rounded-lg bg-bear/15 text-bear">
+                <ShieldAlert className="h-3.5 w-3.5" />
+              </span>
+              <div>
+                <div className="text-[12px] font-semibold">Loss Protection AI</div>
+                <div className="text-[10px] text-muted-foreground">Pause · re-analyze · resume only on high-probability setups</div>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div><Label>Daily loss limit</Label><Input className="num" value={dailyLossLimit} onChange={(e) => setDailyLossLimit(e.target.value)} /></div>
+              <div><Label>Pause after loss (s)</Label><Input className="num" value={pauseAfterLoss} onChange={(e) => setPauseAfterLoss(e.target.value)} /></div>
+              <div><Label>Recovery conf %</Label><Input className="num" value={recoveryConf} onChange={(e) => setRecoveryConf(e.target.value)} /></div>
+            </div>
+            <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-3">
+              <label className="flex cursor-pointer items-center justify-between gap-2 rounded-lg border border-border/50 bg-background/40 px-2.5 py-2">
+                <span className="text-[11px] font-medium">Capital protection</span>
+                <input type="checkbox" checked={capitalProtection} onChange={(e) => setCapitalProtection(e.target.checked)} className="h-4 w-4 accent-primary" />
+              </label>
+              <label className="flex cursor-pointer items-center justify-between gap-2 rounded-lg border border-border/50 bg-background/40 px-2.5 py-2">
+                <span className="text-[11px] font-medium">Smart recovery</span>
+                <input type="checkbox" checked={smartRecovery} onChange={(e) => setSmartRecovery(e.target.checked)} className="h-4 w-4 accent-primary" />
+              </label>
+              <label className="flex cursor-pointer items-center justify-between gap-2 rounded-lg border border-border/50 bg-background/40 px-2.5 py-2">
+                <span className="text-[11px] font-medium">No-trade if risky</span>
+                <input type="checkbox" checked={noTradeRisky} onChange={(e) => setNoTradeRisky(e.target.checked)} className="h-4 w-4 accent-primary" />
+              </label>
+            </div>
+            <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
+              Reduces losses by pausing after every losing trade and requiring AI re-confirmation before resuming.
+              Does not guarantee wins — focuses on high-probability setups only.
+            </p>
           </div>
 
             <p className="flex items-center gap-1 pt-1 text-[10px] text-muted-foreground">
