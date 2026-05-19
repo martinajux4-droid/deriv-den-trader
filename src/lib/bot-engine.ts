@@ -53,6 +53,11 @@ export type StrategyConfig = {
   capital_protection?: boolean;        // halve stake & disable martingale during recovery
   smart_recovery?: boolean;            // reset stake to base after every loss (no martingale escalation)
   no_trade_when_risky?: boolean;       // skip entries when volatility extreme or signal uncertain
+
+  // One-shot: force an immediate trade on the first loop iteration, bypassing
+  // confidence / risky-market gates. Used by the "Execute Now" button so the
+  // user sees a trade fire instantly after scan completes.
+  force_first_trade?: boolean;
 };
 
 export type BotState =
@@ -89,6 +94,7 @@ export class BotRunner {
   private lastTicks: number[] = [];
   private state: BotState = "idle";
   private inRecovery = false;
+  private forceNext = false;
 
   constructor(
     private client: DerivClient,
@@ -103,6 +109,7 @@ export class BotRunner {
     const preset = RISK_PRESETS[cfg.risk_mode || "normal"];
     this.cfg = { ...preset, ...cfg } as StrategyConfig;
     this.currentStake = cfg.stake;
+    this.forceNext = !!cfg.force_first_trade;
   }
 
   stop(reason = "Stopped by user") { this.stopped = true; this.emit({ kind: "stopped", reason }); }
@@ -120,6 +127,32 @@ export class BotRunner {
 
   /** Decide direction + contract from analysis. Returns null when bot should wait. */
   private decide(a: Analysis): { contract: string; barrier?: number } | null {
+    return this._decideCore(a);
+  }
+
+  /** Forced decision used by "Execute Now" — never returns null. */
+  private forcedDecision(a: Analysis): { contract: string; barrier?: number } {
+    const c = this.cfg;
+    const dirUp = a.recommendation === "RISE"
+      || (a.recommendation === "WAIT" && a.momentum >= 0);
+    switch (c.type) {
+      case "even_odd_ai": {
+        const d = digitStats(this.lastTicks);
+        return { contract: d.even >= 50 ? "DIGITEVEN" : "DIGITODD" };
+      }
+      case "over_under_ai": {
+        const d = digitStats(this.lastTicks);
+        return { contract: d.over5 >= 50 ? "DIGITOVER" : "DIGITUNDER", barrier: c.barrier ?? 5 };
+      }
+      case "matches_differs_ai": {
+        return { contract: "DIGITDIFF", barrier: c.barrier ?? 0 };
+      }
+      default:
+        return { contract: dirUp ? "CALL" : "PUT" };
+    }
+  }
+
+  private _decideCore(a: Analysis): { contract: string; barrier?: number } | null {
     const c = this.cfg;
     const min = c.min_confidence ?? 65;
 
@@ -304,7 +337,7 @@ export class BotRunner {
         this.emit({ kind: "analysis", analysis });
 
         // Loss Protection AI · require higher confidence to re-enter after a loss
-        if (this.inRecovery) {
+        if (this.inRecovery && !this.forceNext) {
           const recMin = cfg.recovery_min_confidence
             ?? Math.min(95, (cfg.min_confidence ?? 65) + 15);
           if (analysis.confidence < recMin) {
@@ -317,13 +350,16 @@ export class BotRunner {
         }
 
         // No-trade-when-risky: skip during extreme volatility or low signal quality
-        if (cfg.no_trade_when_risky && (analysis.volatility > 88 || analysis.entryScore < 40)) {
+        if (!this.forceNext && cfg.no_trade_when_risky && (analysis.volatility > 88 || analysis.entryScore < 40)) {
           this.setState("waiting_entry", `Market risky · vol ${analysis.volatility} · skipping`);
           await sleep(500);
           continue;
         }
 
-        const decision = this.decide(analysis);
+        let decision = this.decide(analysis);
+        if (!decision && this.forceNext) {
+          decision = this.forcedDecision(analysis);
+        }
         if (!decision) {
           this.setState("waiting_entry", `Waiting · conf ${analysis.confidence}% · ${analysis.recommendationText}`);
           await sleep(400);
@@ -359,6 +395,7 @@ export class BotRunner {
             ...(decision.barrier !== undefined ? { barrier: decision.barrier } : {}),
           });
           const buy = await client.buyContract(proposal.id, proposal.ask_price);
+          this.forceNext = false;
           this.emit({ kind: "trade_open", contract_id: buy.contract_id, stake: stakeForTrade, contract_type: decision.contract });
           this.emit({ kind: "log", level: "info", msg: `OPEN ${decision.contract} · ${stakeForTrade.toFixed(2)} ${this.currency} · AI conf ${analysis.confidence}%` });
           await this.onTrade({ contract_id: buy.contract_id, stake: stakeForTrade, contract_type: decision.contract });

@@ -102,7 +102,7 @@ function BotPage() {
     setScanOpen(true);
   };
 
-  const start = async (overrideSymbol?: string) => {
+  const start = async (overrideSymbol?: string, opts?: { forceTrade?: boolean }) => {
     if (!client || !active || !user) { toast.error("Connect a Deriv account first"); return; }
     const sym = overrideSymbol || symbol;
     if (overrideSymbol && overrideSymbol !== symbol) setSymbol(overrideSymbol);
@@ -124,6 +124,7 @@ function BotPage() {
       capital_protection: capitalProtection,
       smart_recovery: smartRecovery,
       no_trade_when_risky: noTradeRisky,
+      force_first_trade: opts?.forceTrade ?? false,
     };
 
     const { data: run } = await supabase.from("bot_runs").insert({
@@ -385,7 +386,8 @@ function BotPage() {
         onClose={() => setScanOpen(false)}
         onExecute={(sym) => {
           setScanOpen(false);
-          start(sym);
+          start(sym, { forceTrade: true });
+          toast.success("Executing trade now…");
         }}
       />
 
