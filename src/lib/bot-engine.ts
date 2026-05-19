@@ -127,6 +127,32 @@ export class BotRunner {
 
   /** Decide direction + contract from analysis. Returns null when bot should wait. */
   private decide(a: Analysis): { contract: string; barrier?: number } | null {
+    return this._decideCore(a);
+  }
+
+  /** Forced decision used by "Execute Now" — never returns null. */
+  private forcedDecision(a: Analysis): { contract: string; barrier?: number } {
+    const c = this.cfg;
+    const dirUp = a.recommendation === "RISE"
+      || (a.recommendation === "WAIT" && a.momentum >= 0);
+    switch (c.type) {
+      case "even_odd_ai": {
+        const d = digitStats(this.lastTicks);
+        return { contract: d.even >= 50 ? "DIGITEVEN" : "DIGITODD" };
+      }
+      case "over_under_ai": {
+        const d = digitStats(this.lastTicks);
+        return { contract: d.over5 >= 50 ? "DIGITOVER" : "DIGITUNDER", barrier: c.barrier ?? 5 };
+      }
+      case "matches_differs_ai": {
+        return { contract: "DIGITDIFF", barrier: c.barrier ?? 0 };
+      }
+      default:
+        return { contract: dirUp ? "CALL" : "PUT" };
+    }
+  }
+
+  private _decideCore(a: Analysis): { contract: string; barrier?: number } | null {
     const c = this.cfg;
     const min = c.min_confidence ?? 65;
 
