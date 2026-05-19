@@ -369,6 +369,7 @@ export class BotRunner {
             ...(decision.barrier !== undefined ? { barrier: decision.barrier } : {}),
           });
           const buy = await client.buyContract(proposal.id, proposal.ask_price);
+          this.forceNext = false;
           this.emit({ kind: "trade_open", contract_id: buy.contract_id, stake: stakeForTrade, contract_type: decision.contract });
           this.emit({ kind: "log", level: "info", msg: `OPEN ${decision.contract} · ${stakeForTrade.toFixed(2)} ${this.currency} · AI conf ${analysis.confidence}%` });
           await this.onTrade({ contract_id: buy.contract_id, stake: stakeForTrade, contract_type: decision.contract });
