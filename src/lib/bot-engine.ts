@@ -94,6 +94,7 @@ export class BotRunner {
   private lastTicks: number[] = [];
   private state: BotState = "idle";
   private inRecovery = false;
+  private forceNext = false;
 
   constructor(
     private client: DerivClient,
@@ -108,6 +109,7 @@ export class BotRunner {
     const preset = RISK_PRESETS[cfg.risk_mode || "normal"];
     this.cfg = { ...preset, ...cfg } as StrategyConfig;
     this.currentStake = cfg.stake;
+    this.forceNext = !!cfg.force_first_trade;
   }
 
   stop(reason = "Stopped by user") { this.stopped = true; this.emit({ kind: "stopped", reason }); }
