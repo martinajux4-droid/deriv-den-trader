@@ -311,7 +311,7 @@ export class BotRunner {
         this.emit({ kind: "analysis", analysis });
 
         // Loss Protection AI · require higher confidence to re-enter after a loss
-        if (this.inRecovery) {
+        if (this.inRecovery && !this.forceNext) {
           const recMin = cfg.recovery_min_confidence
             ?? Math.min(95, (cfg.min_confidence ?? 65) + 15);
           if (analysis.confidence < recMin) {
@@ -324,13 +324,16 @@ export class BotRunner {
         }
 
         // No-trade-when-risky: skip during extreme volatility or low signal quality
-        if (cfg.no_trade_when_risky && (analysis.volatility > 88 || analysis.entryScore < 40)) {
+        if (!this.forceNext && cfg.no_trade_when_risky && (analysis.volatility > 88 || analysis.entryScore < 40)) {
           this.setState("waiting_entry", `Market risky · vol ${analysis.volatility} · skipping`);
           await sleep(500);
           continue;
         }
 
-        const decision = this.decide(analysis);
+        let decision = this.decide(analysis);
+        if (!decision && this.forceNext) {
+          decision = this.forcedDecision(analysis);
+        }
         if (!decision) {
           this.setState("waiting_entry", `Waiting · conf ${analysis.confidence}% · ${analysis.recommendationText}`);
           await sleep(400);
