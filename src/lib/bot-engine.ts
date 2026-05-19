@@ -46,6 +46,13 @@ export type StrategyConfig = {
 
   // AI gating
   min_confidence?: number; // 0..100, skip trades below
+
+  // Loss Protection AI
+  pause_after_loss_seconds?: number;   // cooldown after every losing trade
+  recovery_min_confidence?: number;    // higher confidence required to resume after a loss
+  capital_protection?: boolean;        // halve stake & disable martingale during recovery
+  smart_recovery?: boolean;            // reset stake to base after every loss (no martingale escalation)
+  no_trade_when_risky?: boolean;       // skip entries when volatility extreme or signal uncertain
 };
 
 export type BotState =
@@ -81,6 +88,7 @@ export class BotRunner {
   private consecLosses = 0;
   private lastTicks: number[] = [];
   private state: BotState = "idle";
+  private inRecovery = false;
 
   constructor(
     private client: DerivClient,
@@ -199,6 +207,11 @@ export class BotRunner {
   private adjustStake(profit: number | null) {
     const c = this.cfg;
     if (profit === null) return;
+    // Smart recovery: never escalate after a loss, just reset to base
+    if (c.smart_recovery && profit < 0) {
+      this.currentStake = c.stake;
+      return;
+    }
     const mode = c.stake_mode || (c.martingale ? "martingale" : "fixed");
     if (mode === "fixed") {
       this.currentStake = c.stake;
@@ -290,6 +303,26 @@ export class BotRunner {
         const analysis = analyze(this.lastTicks)!;
         this.emit({ kind: "analysis", analysis });
 
+        // Loss Protection AI · require higher confidence to re-enter after a loss
+        if (this.inRecovery) {
+          const recMin = cfg.recovery_min_confidence
+            ?? Math.min(95, (cfg.min_confidence ?? 65) + 15);
+          if (analysis.confidence < recMin) {
+            this.setState("risk_lock", `Recovery · waiting for ≥${recMin}% confidence (now ${analysis.confidence}%)`);
+            await sleep(600);
+            continue;
+          }
+          this.inRecovery = false;
+          this.emit({ kind: "log", level: "good", msg: `AI re-entry confirmed at ${analysis.confidence}% — resuming trading` });
+        }
+
+        // No-trade-when-risky: skip during extreme volatility or low signal quality
+        if (cfg.no_trade_when_risky && (analysis.volatility > 88 || analysis.entryScore < 40)) {
+          this.setState("waiting_entry", `Market risky · vol ${analysis.volatility} · skipping`);
+          await sleep(500);
+          continue;
+        }
+
         const decision = this.decide(analysis);
         if (!decision) {
           this.setState("waiting_entry", `Waiting · conf ${analysis.confidence}% · ${analysis.recommendationText}`);
@@ -309,7 +342,11 @@ export class BotRunner {
         this.setState("executing", `${decision.contract} · ${snapped.duration}${snapped.unit} · conf ${analysis.confidence}%`);
 
         // smart stake based on AI confidence
-        const stakeForTrade = this.smartConfidenceStake(this.currentStake, analysis.confidence);
+        let stakeForTrade = this.smartConfidenceStake(this.currentStake, analysis.confidence);
+        // Capital protection: halve stake until a winning trade clears recovery
+        if (cfg.capital_protection && this.consecLosses > 0) {
+          stakeForTrade = Math.max(0.35, Number((stakeForTrade * 0.5).toFixed(2)));
+        }
 
         try {
           const proposal = await client.getProposal({
@@ -342,6 +379,17 @@ export class BotRunner {
           await this.onTrade({ contract_id: buy.contract_id, stake: stakeForTrade, contract_type: decision.contract, profit, settled });
 
           this.adjustStake(profit);
+
+          // Loss Protection AI · pause + force AI re-analysis after every losing trade
+          if (profit < 0) {
+            this.inRecovery = true;
+            const pauseS = Math.max(0, cfg.pause_after_loss_seconds ?? 8);
+            if (pauseS > 0) {
+              this.setState("risk_lock", `Loss protection · re-analyzing market (${pauseS}s)`);
+              this.emit({ kind: "log", level: "warn", msg: `Loss detected · pausing ${pauseS}s and re-scanning market` });
+              await sleep(pauseS * 1000);
+            }
+          }
         } catch (e: any) {
           const msg = e?.message || e?.error?.message || "unknown";
           this.emit({ kind: "log", level: "bad", msg: `Trade error: ${msg}` });
