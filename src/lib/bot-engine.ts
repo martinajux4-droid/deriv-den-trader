@@ -53,6 +53,11 @@ export type StrategyConfig = {
   capital_protection?: boolean;        // halve stake & disable martingale during recovery
   smart_recovery?: boolean;            // reset stake to base after every loss (no martingale escalation)
   no_trade_when_risky?: boolean;       // skip entries when volatility extreme or signal uncertain
+
+  // One-shot: force an immediate trade on the first loop iteration, bypassing
+  // confidence / risky-market gates. Used by the "Execute Now" button so the
+  // user sees a trade fire instantly after scan completes.
+  force_first_trade?: boolean;
 };
 
 export type BotState =
