@@ -386,7 +386,8 @@ function BotPage() {
         onClose={() => setScanOpen(false)}
         onExecute={(sym) => {
           setScanOpen(false);
-          start(sym);
+          start(sym, { forceTrade: true });
+          toast.success("Executing trade now…");
         }}
       />
 
