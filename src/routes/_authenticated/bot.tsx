@@ -60,6 +60,13 @@ function BotPage() {
   const [maxTrades, setMaxTrades] = useState("2");
   const [scanSeconds, setScanSeconds] = useState("30");
 
+  // Loss Protection AI
+  const [pauseAfterLoss, setPauseAfterLoss] = useState("8");
+  const [recoveryConf, setRecoveryConf] = useState("85");
+  const [capitalProtection, setCapitalProtection] = useState(true);
+  const [smartRecovery, setSmartRecovery] = useState(true);
+  const [noTradeRisky, setNoTradeRisky] = useState(true);
+
   const [running, setRunning] = useState(false);
   const [paused, setPaused] = useState(false);
   const [state, setState] = useState<BotState>("idle");
@@ -112,6 +119,11 @@ function BotPage() {
       risk_mode: "normal" as RiskMode,
       stake_mode: "martingale",
       min_confidence: Number(minConfidence) || 65,
+      pause_after_loss_seconds: Math.max(0, Number(pauseAfterLoss) || 0),
+      recovery_min_confidence: Math.min(95, Math.max(50, Number(recoveryConf) || 85)),
+      capital_protection: capitalProtection,
+      smart_recovery: smartRecovery,
+      no_trade_when_risky: noTradeRisky,
     };
 
     const { data: run } = await supabase.from("bot_runs").insert({
