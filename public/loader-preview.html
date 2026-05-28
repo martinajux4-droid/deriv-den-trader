@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Loading screen preview — clients/*.json</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-primary: #000000;
+      --bg-secondary: #1A1A1A;
+      --text-primary: #C0C0C0;
+      --text-secondary: #E0E0E0;
+      --border-color: #333333;
+      --ui-accent-bright: #3b82f6;
+      --ui-accent-active: #2563eb;
+    }
+
+    html.light-theme,
+    html.light-theme body {
+      --bg-primary: #FFFFFF;
+      --text-primary: #000000;
+      --text-secondary: #333333;
+      --border-color: #D0D0D0;
+    }
+
+    html, body {
+      min-height: 100%;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: Arial, Tahoma, Verdana, sans-serif;
+    }
+
+    #preview-chrome {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 200000;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px 16px;
+      padding: 10px 14px;
+      background: rgba(12, 12, 14, 0.92);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 13px;
+      color: #c8c8c8;
+    }
+
+    #preview-chrome label { display: flex; align-items: center; gap: 8px; }
+    #preview-chrome select {
+      background: #1e1e22;
+      color: #eee;
+      border: 1px solid #444;
+      border-radius: 6px;
+      padding: 6px 10px;
+      min-width: 200px;
+    }
+    #preview-chrome button {
+      background: #2a2a32;
+      color: #eee;
+      border: 1px solid #555;
+      border-radius: 6px;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+    #preview-chrome button:hover { background: #363640; }
+    #preview-chrome .hint { opacity: 0.75; font-size: 12px; max-width: 520px; line-height: 1.4; }
+
+    /* Match src/index.css — loader-with-atmosphere + lime blobs (below preview toolbar) */
+    #loader-wrapper.loader-with-atmosphere {
+      position: fixed;
+      top: 52px;
+      left: 0;
+      width: 100%;
+      height: calc(100% - 52px);
+      z-index: 99999;
+      background: radial-gradient(ellipse 120% 80% at 50% 100%, #040605 0%, #010201 45%, #000 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: opacity 0.75s ease, visibility 0.75s ease;
+      overflow: hidden;
+    }
+
+    .loader-atmosphere {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .loader-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(64px) saturate(1.15);
+      mix-blend-mode: screen;
+    }
+
+    .loader-blob--a {
+      width: min(88vw, 480px);
+      height: min(88vw, 480px);
+      left: 50%;
+      top: 40%;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(
+        circle at 42% 40%,
+        rgba(220, 255, 120, 0.95) 0%,
+        rgba(150, 240, 80, 0.5) 45%,
+        transparent 76%
+      );
+      opacity: 0.9;
+      animation: loaderBlobA 16s ease-in-out infinite;
+    }
+
+    .loader-blob--b {
+      width: min(55vw, 320px);
+      height: min(55vw, 320px);
+      left: 12%;
+      top: 58%;
+      background: radial-gradient(circle at 50% 50%, rgba(120, 255, 200, 0.45) 0%, transparent 70%);
+      opacity: 0.75;
+      animation: loaderBlobB 12s ease-in-out infinite;
+    }
+
+    .loader-blob--c {
+      width: min(48vw, 260px);
+      height: min(48vw, 260px);
+      right: 8%;
+      top: 22%;
+      background: radial-gradient(circle at 55% 45%, rgba(230, 255, 140, 0.55) 0%, transparent 68%);
+      opacity: 0.65;
+      animation: loaderBlobC 18s ease-in-out infinite;
+    }
+
+    .loader-noise {
+      position: absolute;
+      inset: -10%;
+      opacity: 0.045;
+      mix-blend-mode: overlay;
+      pointer-events: none;
+      background-image: repeating-linear-gradient(
+          -18deg,
+          rgba(255, 255, 255, 0.06) 0px,
+          transparent 2px,
+          rgba(0, 0, 0, 0.07) 4px,
+          transparent 7px
+        ),
+        repeating-linear-gradient(71deg, rgba(255, 255, 255, 0.045) 0px, transparent 3px, transparent 9px);
+      background-size: 8px 10px, 11px 13px;
+      animation: loaderGrainDrift 3.2s linear infinite;
+    }
+
+    @keyframes loaderBlobA {
+      0%,
+      100% {
+        transform: translate(-50%, -50%) scale(1);
+      }
+      33% {
+        transform: translate(-50%, -50%) scale(1.06) translate(3%, -2%);
+      }
+      66% {
+        transform: translate(-50%, -50%) scale(0.97) translate(-2%, 3%);
+      }
+    }
+
+    @keyframes loaderBlobB {
+      0%,
+      100% {
+        transform: translate(0, 0) scale(1);
+      }
+      50% {
+        transform: translate(12%, -8%) scale(1.12);
+      }
+    }
+
+    @keyframes loaderBlobC {
+      0%,
+      100% {
+        transform: translate(0, 0) scale(1);
+      }
+      40% {
+        transform: translate(-10%, 14%) scale(1.08);
+      }
+      75% {
+        transform: translate(6%, -6%) scale(0.94);
+      }
+    }
+
+    @keyframes loaderGrainDrift {
+      0% {
+        transform: translate(0, 0);
+      }
+      100% {
+        transform: translate(-8px, 6px);
+      }
+    }
+
+    .loader-core-shell,
+    .loader-dynamic-shell {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      min-height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #loader-wrapper .loader-dynamic-shell > * {
+      width: 100%;
+      min-height: 100%;
+      flex: 1;
+      background: transparent !important;
+    }
+
+    #loader-wrapper .loader-dynamic-shell > *::before {
+      opacity: 0.22 !important;
+    }
+
+    .loader-content {
+      text-align: center;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+      max-width: 400px;
+      padding: 40px;
+    }
+
+    .loader-brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .loader-logo {
+      font-size: 32px;
+      font-weight: 700;
+      font-family: Arial, Tahoma, Verdana, sans-serif;
+      color: var(--text-secondary);
+      letter-spacing: 2px;
+      margin: 0;
+      animation: fadeInScale 0.8s ease-out;
+    }
+
+    .loader-logo .brand-accent {
+      color: var(--ui-accent-bright);
+    }
+
+    .loader-tagline {
+      font-size: 10px;
+      font-weight: 400;
+      font-family: Arial, Tahoma, Verdana, sans-serif;
+      color: var(--ui-accent-bright);
+      opacity: 0.75;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin: 0;
+      animation: fadeIn 0.8s ease-out 0.3s;
+      animation-fill-mode: both;
+    }
+
+    .loader-progress {
+      width: 100%;
+      max-width: 200px;
+      height: 2px;
+      background: var(--border-color);
+      border-radius: 2px;
+      overflow: hidden;
+      position: relative;
+      animation: fadeIn 0.8s ease-out 0.5s;
+      animation-fill-mode: both;
+    }
+
+    .loader-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--ui-accent-active) 0%, var(--ui-accent-bright) 100%);
+      border-radius: 2px;
+      width: 0%;
+      position: relative;
+      overflow: hidden;
+      animation: progressLoad 2s ease-in-out infinite;
+    }
+
+    .loader-progress-bar::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      animation: shimmer 1.5s ease-in-out infinite;
+    }
+
+    @keyframes progressLoad {
+      0% { width: 0%; }
+      50% { width: 70%; }
+      100% { width: 100%; }
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .loader-status {
+      font-size: 11px;
+      font-weight: 400;
+      font-family: Arial, Tahoma, Verdana, sans-serif;
+      color: var(--ui-accent-bright);
+      opacity: 0.72;
+      letter-spacing: 0.5px;
+      margin: 0;
+      animation: fadeIn 0.8s ease-out 0.7s;
+      animation-fill-mode: both;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes fadeInScale {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    @media (max-width: 768px) {
+      .loader-logo { font-size: 28px; }
+      .loader-content { gap: 24px; padding: 30px; }
+    }
+
+    @media (max-width: 480px) {
+      .loader-logo { font-size: 24px; }
+      .loader-content { gap: 20px; padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="preview-chrome">
+    <label>
+      Client
+      <select id="clientSelect" aria-label="Client JSON"></select>
+    </label>
+    <button type="button" id="reloadBtn">Reload JSON</button>
+    <span class="hint" id="statusLine">Run <code>npm run clients:sync</code> after editing files in <code>clients/</code>, then refresh.</span>
+  </div>
+
+  <div id="loader-wrapper"></div>
+
+  <script>
+    (function () {
+      var loaderWrap = document.getElementById('loader-wrapper');
+      var select = document.getElementById('clientSelect');
+      var reloadBtn = document.getElementById('reloadBtn');
+      var statusLine = document.getElementById('statusLine');
+
+      function escapeHtml(s) {
+        return String(s)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      function applyTheme(client) {
+        var theme = client.theme || {};
+        var vars = theme.cssVars || {};
+        var root = document.documentElement;
+        Object.keys(vars).forEach(function (k) {
+          if (typeof vars[k] === 'string') root.style.setProperty(k, vars[k]);
+        });
+        var dcs = theme.defaultColorScheme;
+        var dark = dcs === 'dark';
+        var light = dcs === 'light';
+        if (dcs === 'dark' || dcs === 'light') {
+          root.classList.toggle('dark-theme', dark);
+          root.classList.toggle('light-theme', light);
+          document.body.classList.toggle('dark-theme', dark);
+          document.body.classList.toggle('light-theme', light);
+        } else {
+          root.classList.remove('dark-theme', 'light-theme');
+          document.body.classList.remove('dark-theme', 'light-theme');
+        }
+      }
+
+      function loaderAtmosphereHtml() {
+        return (
+          '<div class="loader-atmosphere" aria-hidden="true">' +
+          '<div class="loader-blob loader-blob--a"></div>' +
+          '<div class="loader-blob loader-blob--b"></div>' +
+          '<div class="loader-blob loader-blob--c"></div>' +
+          '<div class="loader-noise"></div>' +
+          '</div>'
+        );
+      }
+
+      function defaultLoaderInnerHtml(client) {
+        var rawName = client.loaderName != null ? String(client.loaderName).trim() : '';
+        var logoInner = rawName
+          ? escapeHtml(rawName)
+          : '<span class="brand-accent">D</span>mt5';
+        return (
+          '<div class="loader-content">' +
+          '<div class="loader-brand">' +
+          '<div class="loader-logo">' + logoInner + '</div>' +
+          '<div class="loader-tagline">Powered by Deriv</div>' +
+          '</div>' +
+          '<div class="loader-progress"><div class="loader-progress-bar"></div></div>' +
+          '<div class="loader-status">Initializing...</div>' +
+          '</div>'
+        );
+      }
+
+      function renderClient(client) {
+        applyTheme(client);
+        var custom =
+          client.loadingScreen &&
+          typeof client.loadingScreen.html === 'string' &&
+          client.loadingScreen.html.trim();
+        loaderWrap.className = 'loader-with-atmosphere';
+        loaderWrap.innerHTML =
+          loaderAtmosphereHtml() +
+          (custom
+            ? '<div class="loader-dynamic-shell">' + client.loadingScreen.html.trim() + '</div>'
+            : '<div class="loader-core-shell">' + defaultLoaderInnerHtml(client) + '</div>');
+        document.title = 'Load screen · ' + (client.displayName || client.id || 'preview');
+      }
+
+      function bust(url) {
+        return url + (url.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
+      }
+
+      function loadJson(url) {
+        return fetch(bust(url), { cache: 'no-store' }).then(function (r) {
+          if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
+          return r.json();
+        });
+      }
+
+      function showErr(msg) {
+        statusLine.textContent = msg;
+        statusLine.style.color = '#f87171';
+      }
+
+      /** If clients-index.json is missing, probe these paths (keep in sync with clients/*.json). */
+      var PROBE_CLIENT_IDS = ['apex-synthetic-markets', 'example', 'hifexpro'];
+
+      function probeClientId(id) {
+        return loadJson('/clients/' + id + '.json')
+          .then(function () {
+            return id;
+          })
+          .catch(function () {
+            return null;
+          });
+      }
+
+      function loadIndex() {
+        return loadJson('/clients-index.json').catch(function () {
+          return Promise.all(PROBE_CLIENT_IDS.map(probeClientId)).then(function (ids) {
+            var found = ids.filter(Boolean).sort();
+            if (!found.length) {
+              throw new Error(
+                'No /clients/*.json found. From folder my-react-app run: npm run clients:sync'
+              );
+            }
+            return { clientIds: found };
+          });
+        });
+      }
+
+      function populateSelect(ids) {
+        select.innerHTML = '';
+        if (!ids.length) {
+          var opt = document.createElement('option');
+          opt.value = '';
+          opt.textContent = '(no clients)';
+          select.appendChild(opt);
+          return;
+        }
+        ids.forEach(function (id) {
+          var o = document.createElement('option');
+          o.value = id;
+          o.textContent = id;
+          select.appendChild(o);
+        });
+      }
+
+      function currentId() {
+        return select.value;
+      }
+
+      function loadSelected() {
+        var id = currentId();
+        if (!id) return;
+        statusLine.textContent = 'Loading…';
+        statusLine.style.color = '';
+        loadJson('/clients/' + id + '.json')
+          .then(function (data) {
+            renderClient(data);
+            statusLine.textContent = 'Preview: clients/' + id + '.json — sync after edits: npm run clients:sync';
+            statusLine.style.color = '';
+          })
+          .catch(function (e) {
+            showErr(String(e.message || e));
+            loaderWrap.innerHTML =
+              '<div class="loader-content"><div class="loader-status">Could not load client JSON. ' +
+              escapeHtml(String(e.message || e)) +
+              '</div></div>';
+          });
+      }
+
+      select.addEventListener('change', loadSelected);
+      reloadBtn.addEventListener('click', loadSelected);
+
+      loadIndex()
+        .then(function (idx) {
+          var ids = idx.clientIds || [];
+          populateSelect(ids);
+          if (ids.length) loadSelected();
+          else showErr('No client JSON files in clients/.');
+        })
+        .catch(function (e) {
+          populateSelect([]);
+          showErr(String(e.message || e));
+          loaderWrap.innerHTML =
+            '<div class="loader-content"><div class="loader-status">' +
+            escapeHtml(String(e.message || e)) +
+            '</div></div>';
+        });
+    })();
+  </script>
+</body>
+</html>

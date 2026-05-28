@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create Signal Token - DMT5</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; max-height: 100vh; overflow: hidden; }
+        body {
+            font-family: Arial, Tahoma, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            padding: 8px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 420px;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        h1 {
+            font-size: 1.1rem;
+            margin-bottom: 6px;
+            color: #c0c0c0;
+            flex-shrink: 0;
+        }
+        .form-group {
+            margin-bottom: 6px;
+        }
+        label {
+            display: block;
+            margin-bottom: 2px;
+            font-size: 11px;
+            color: #a0a0a0;
+        }
+        input, select {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background: #0d0d0d;
+            color: #e0e0e0;
+            font-size: 13px;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        .row {
+            display: flex;
+            gap: 8px;
+        }
+        .row .form-group { flex: 1; }
+        button {
+            width: 100%;
+            padding: 8px;
+            margin-top: 4px;
+            border: none;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background: #3b82f6;
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+        .btn-secondary {
+            background: #2a2a2a;
+            color: #e0e0e0;
+            border: 1px solid #444;
+        }
+        .btn-secondary:hover {
+            background: #333;
+        }
+        .scroll-area {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+        }
+        .result {
+            margin-top: 6px;
+            display: none;
+            flex-shrink: 0;
+        }
+        .result.show { display: block; }
+        textarea.result-token {
+            width: 100%;
+            min-height: 48px;
+            max-height: 80px;
+            padding: 6px 8px;
+            margin-top: 4px;
+            margin-bottom: 4px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background: #0d0d0d;
+            color: #e0e0e0;
+            font-size: 10px;
+            resize: none;
+        }
+        .message {
+            margin-top: 4px;
+            padding: 4px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            display: none;
+        }
+        .message.show { display: block; }
+        .message.success { background: rgba(0,200,83,0.2); color: #00c853; }
+        .message.error { background: rgba(255,82,82,0.2); color: #ff5252; }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 4px;
+            color: #3b82f6;
+            text-decoration: none;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        .back-link:hover { text-decoration: underline; }
+        .time-window-box {
+            background: #0d0d0d;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 6px 8px;
+            margin-bottom: 6px;
+        }
+        .time-window-box .tz-label {
+            font-size: 9px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 2px;
+        }
+        .time-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .time-input-native {
+            flex: 1 1 auto;
+            min-width: 120px;
+            width: 100%;
+            font-size: 16px;
+            padding: 6px 8px;
+            font-variant-numeric: tabular-nums;
+            background: #1a1a1a;
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: #e0e0e0;
+        }
+        .time-input-native:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        .time-input-native::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            opacity: 0.8;
+        }
+        .btn-now {
+            flex: 0 0 auto;
+            width: auto;
+            min-width: 0;
+            padding: 6px 10px;
+            font-size: 10px;
+            font-weight: 600;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 5px;
+            color: #3b82f6;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .btn-now:hover {
+            background: #333;
+            border-color: #3b82f6;
+        }
+        .quick-set-row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            margin-top: 4px;
+            flex-wrap: wrap;
+        }
+        .quick-set-row input[type="number"] {
+            width: 48px;
+            text-align: center;
+            padding: 4px 4px;
+        }
+        .quick-set-row .unit {
+            color: #888;
+            font-size: 12px;
+        }
+        .btn-set-to {
+            padding: 8px 12px;
+            font-size: 12px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: #e0e0e0;
+            cursor: pointer;
+        }
+        .btn-set-to:hover {
+            background: #333;
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+        .timeframe-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .timeframe-row .form-group { flex: 0 0 auto; }
+        .timeframe-row input[type="number"] {
+            width: 56px;
+            text-align: center;
+        }
+        .timeframe-row .unit { color: #888; font-size: 11px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← Back to trading</a>
+        <h1>Create signal token</h1>
+        <p style="font-size: 11px; color: #888; margin-bottom: 6px;">Generate a token to share. Paste in Signal panel to place the same trade.</p>
+        <div class="scroll-area">
+        <div class="form-group">
+            <label for="symbol">Market / Symbol</label>
+            <select id="symbol"></select>
+        </div>
+        <div class="form-group">
+            <label for="direction">Direction</label>
+            <select id="direction">
+                <option value="rise">Rise (Buy)</option>
+                <option value="fall">Fall (Sell)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label style="color: #888;">Valid time window (EAT)</label>
+            <p style="font-size: 10px; color: #666; margin-bottom: 4px;">Trade only between these times. Duration = until Valid to.</p>
+        </div>
+        <div class="time-window-box">
+            <div class="tz-label">Valid from</div>
+            <div class="time-row">
+                <input type="time" id="validFrom" class="time-input-native" required />
+                <button type="button" id="validFromNow" class="btn-now">Now</button>
+            </div>
+        </div>
+        <div class="time-window-box">
+            <div class="tz-label">Valid to</div>
+            <div class="time-row">
+                <input type="time" id="validTo" class="time-input-native" required readonly />
+            </div>
+            <div class="quick-set-row">
+                <span class="unit" style="color: #888;">Duration:</span>
+                <input type="number" id="validToMin" min="0" max="1440" value="5" placeholder="0" />
+                <span class="unit">min</span>
+                <input type="number" id="validToSec" min="0" max="59" value="0" placeholder="0" />
+                <span class="unit">sec</span>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Chart timeframe (per candle)</label>
+            <div class="timeframe-row">
+                <div class="form-group">
+                    <label for="timeframeMin" style="margin-bottom: 2px;">Min</label>
+                    <input type="number" id="timeframeMin" min="0" max="120" value="0" />
+                </div>
+                <div class="form-group">
+                    <label for="timeframeSec" style="margin-bottom: 2px;">Sec</label>
+                    <input type="number" id="timeframeSec" min="0" max="59" value="5" />
+                </div>
+                <span class="unit" style="align-self: flex-end; margin-bottom: 10px;">→ total seconds</span>
+            </div>
+            <p style="font-size: 10px; color: #666; margin-top: 2px;">Min 5 sec (e.g. 1m0s=60)</p>
+        </div>
+        <button type="button" id="generateBtn" class="btn-primary">Generate signal token</button>
+        </div>
+
+        <div id="result" class="result">
+            <label>Token (share this)</label>
+            <textarea id="tokenOutput" class="result-token" readonly></textarea>
+            <button type="button" id="copyBtn" class="btn-secondary">Copy to clipboard</button>
+        </div>
+        <div id="message" class="message"></div>
+    </div>
+
+    <script>
+        (function() {
+            var EAT_TZ = 'Africa/Nairobi';
+            var manualSymbols = [
+                { symbol: 'cryBTCUSD', display_name: 'BTC/USD', market: 'cryptocurrency', market_display_name: 'Cryptocurrencies', display_order: 0 },
+                { symbol: 'cryETHUSD', display_name: 'ETH/USD', market: 'cryptocurrency', market_display_name: 'Cryptocurrencies', display_order: 1 },
+                { symbol: 'frxEURUSD', display_name: 'EUR/USD', market: 'forex', market_display_name: 'Forex', display_order: 0 },
+                { symbol: 'frxAUDJPY', display_name: 'AUD/JPY', market: 'forex', market_display_name: 'Forex', display_order: 1 },
+                { symbol: 'frxAUDUSD', display_name: 'AUD/USD', market: 'forex', market_display_name: 'Forex', display_order: 2 },
+                { symbol: 'frxGBPUSD', display_name: 'GBP/USD', market: 'forex', market_display_name: 'Forex', display_order: 3 },
+                { symbol: 'frxUSDJPY', display_name: 'USD/JPY', market: 'forex', market_display_name: 'Forex', display_order: 4 },
+                { symbol: 'frxUSDCAD', display_name: 'USD/CAD', market: 'forex', market_display_name: 'Forex', display_order: 5 },
+                { symbol: 'frxEURAUD', display_name: 'EUR/AUD', market: 'forex', market_display_name: 'Forex', display_order: 6 },
+                { symbol: 'frxEURGBP', display_name: 'EUR/GBP', market: 'forex', market_display_name: 'Forex', display_order: 9 },
+                { symbol: 'frxEURJPY', display_name: 'EUR/JPY', market: 'forex', market_display_name: 'Forex', display_order: 8 },
+                { symbol: 'frxEURCAD', display_name: 'EUR/CAD', market: 'forex', market_display_name: 'Forex', display_order: 14 },
+                { symbol: 'frxEURCHF', display_name: 'EUR/CHF', market: 'forex', market_display_name: 'Forex', display_order: 13 },
+                { symbol: 'frxAUDCAD', display_name: 'AUD/CAD', market: 'forex', market_display_name: 'Forex', display_order: 10 },
+                { symbol: 'frxAUDCHF', display_name: 'AUD/CHF', market: 'forex', market_display_name: 'Forex', display_order: 16 },
+                { symbol: 'frxAUDNZD', display_name: 'AUD/NZD', market: 'forex', market_display_name: 'Forex', display_order: 17 },
+                { symbol: 'frxEURNZD', display_name: 'EUR/NZD', market: 'forex', market_display_name: 'Forex', display_order: 21 },
+                { symbol: 'OTC_AS51', display_name: 'Australia 200', market: 'indices', market_display_name: 'Stock Indices', display_order: 4 },
+                { symbol: 'OTC_SX5E', display_name: 'Euro 50', market: 'indices', market_display_name: 'Stock Indices', display_order: 8 },
+                { symbol: 'RDBULL', display_name: 'BULL MARKET INDEX', market: 'daily_reset', market_display_name: 'Daily Reset Indices', display_order: 0 },
+                { symbol: 'RDBEAR', display_name: 'BEAR MARKET INDEX', market: 'daily_reset', market_display_name: 'Daily Reset Indices', display_order: 1 },
+                { symbol: 'BOOM300N', display_name: 'BOOM 300 INDEX', market: 'crash_boom', market_display_name: 'Crash/Boom Indices', display_order: 0 },
+                { symbol: 'BOOM500', display_name: 'BOOM 500 INDEX', market: 'crash_boom', market_display_name: 'Crash/Boom Indices', display_order: 1 },
+                { symbol: 'BOOM600', display_name: 'BOOM 600 INDEX', market: 'crash_boom', market_display_name: 'Crash/Boom Indices', display_order: 2 },
+                { symbol: 'BOOM900', display_name: 'BOOM 900 INDEX', market: 'crash_boom', market_display_name: 'Crash/Boom Indices', display_order: 3 },
+                { symbol: 'BOOM1000', display_name: 'BOOM 1000 INDEX', market: 'crash_boom', market_display_name: 'Crash/Boom Indices', display_order: 4 },
+                { symbol: 'CRASH300N', display_name: 'CRASH 300 INDEX', market: 'crash_boom', market_display_name: 'Crash/Boom Indices', display_order: 5 },
+                { symbol: 'CRASH500', display_name: 'CRASH 500 INDEX', market: 'crash_boom', market_display_name: 'Crash/Boom Indices', display_order: 6 },
+                { symbol: 'CRASH600', display_name: 'CRASH 600 INDEX', market: 'crash_boom', market_display_name: 'Crash/Boom Indices', display_order: 7 },
+                { symbol: 'CRASH900', display_name: 'CRASH 900 INDEX', market: 'crash_boom', market_display_name: 'Crash/Boom Indices', display_order: 8 },
+                { symbol: 'CRASH1000', display_name: 'CRASH 1000 INDEX', market: 'crash_boom', market_display_name: 'Crash/Boom Indices', display_order: 9 },
+                { symbol: 'R_10', display_name: 'VOLATILITY 10 INDEX', market: 'volatility_index', market_display_name: 'Volatility Indices', display_order: 0 },
+                { symbol: 'R_25', display_name: 'VOLATILITY 25 INDEX', market: 'volatility_index', market_display_name: 'Volatility Indices', display_order: 1 },
+                { symbol: 'R_50', display_name: 'VOLATILITY 50 INDEX', market: 'volatility_index', market_display_name: 'Volatility Indices', display_order: 2 },
+                { symbol: 'R_75', display_name: 'VOLATILITY 75 INDEX', market: 'volatility_index', market_display_name: 'Volatility Indices', display_order: 3 },
+                { symbol: 'R_100', display_name: 'VOLATILITY 100 INDEX', market: 'volatility_index', market_display_name: 'Volatility Indices', display_order: 4 },
+                { symbol: '1HZ10V', display_name: 'VOLATILITY 10 (1S) INDEX', market: 'volatility_1s', market_display_name: 'Volatility (1s) Indices', display_order: 0 },
+                { symbol: '1HZ15V', display_name: 'VOLATILITY 15 (1S) INDEX', market: 'volatility_1s', market_display_name: 'Volatility (1s) Indices', display_order: 1 },
+                { symbol: '1HZ25V', display_name: 'VOLATILITY 25 (1S) INDEX', market: 'volatility_1s', market_display_name: 'Volatility (1s) Indices', display_order: 2 },
+                { symbol: '1HZ30V', display_name: 'VOLATILITY 30 (1S) INDEX', market: 'volatility_1s', market_display_name: 'Volatility (1s) Indices', display_order: 3 },
+                { symbol: '1HZ50V', display_name: 'VOLATILITY 50 (1S) INDEX', market: 'volatility_1s', market_display_name: 'Volatility (1s) Indices', display_order: 4 },
+                { symbol: '1HZ75V', display_name: 'VOLATILITY 75 (1S) INDEX', market: 'volatility_1s', market_display_name: 'Volatility (1s) Indices', display_order: 5 },
+                { symbol: '1HZ90V', display_name: 'VOLATILITY 90 (1S) INDEX', market: 'volatility_1s', market_display_name: 'Volatility (1s) Indices', display_order: 6 },
+                { symbol: '1HZ100V', display_name: 'VOLATILITY 100 (1S) INDEX', market: 'volatility_1s', market_display_name: 'Volatility (1s) Indices', display_order: 7 },
+                { symbol: 'JD10', display_name: 'JUMP 10 INDEX', market: 'jump_index', market_display_name: 'Jump Indices', display_order: 0 },
+                { symbol: 'JD25', display_name: 'JUMP 25 INDEX', market: 'jump_index', market_display_name: 'Jump Indices', display_order: 1 },
+                { symbol: 'JD50', display_name: 'JUMP 50 INDEX', market: 'jump_index', market_display_name: 'Jump Indices', display_order: 2 },
+                { symbol: 'JD75', display_name: 'JUMP 75 INDEX', market: 'jump_index', market_display_name: 'Jump Indices', display_order: 3 },
+                { symbol: 'JD100', display_name: 'JUMP 100 INDEX', market: 'jump_index', market_display_name: 'Jump Indices', display_order: 4 },
+                { symbol: 'stpRNG', display_name: 'STEP INDEX 100', market: 'step_index', market_display_name: 'Step Indices', display_order: 0 },
+                { symbol: 'stpRNG2', display_name: 'STEP INDEX 200', market: 'step_index', market_display_name: 'Step Indices', display_order: 1 },
+                { symbol: 'stpRNG3', display_name: 'STEP INDEX 300', market: 'step_index', market_display_name: 'Step Indices', display_order: 2 },
+                { symbol: 'stpRNG4', display_name: 'STEP INDEX 400', market: 'step_index', market_display_name: 'Step Indices', display_order: 3 },
+                { symbol: 'stpRNG5', display_name: 'STEP INDEX 500', market: 'step_index', market_display_name: 'Step Indices', display_order: 4 },
+                { symbol: 'RB100', display_name: 'RANGE BREAK 100 INDEX', market: 'range_break', market_display_name: 'Range Break Indices', display_order: 0 },
+                { symbol: 'RB200', display_name: 'RANGE BREAK 200 INDEX', market: 'range_break', market_display_name: 'Range Break Indices', display_order: 1 },
+                { symbol: 'WLDAUD', display_name: 'AUD BASKET', market: 'forex_basket', market_display_name: 'Forex Baskets', display_order: 0 },
+                { symbol: 'WLDEUR', display_name: 'EUR BASKET', market: 'forex_basket', market_display_name: 'Forex Baskets', display_order: 1 },
+                { symbol: 'WLDGBP', display_name: 'GBP BASKET', market: 'forex_basket', market_display_name: 'Forex Baskets', display_order: 2 },
+                { symbol: 'WLDUSD', display_name: 'USD BASKET', market: 'forex_basket', market_display_name: 'Forex Baskets', display_order: 3 },
+                { symbol: 'WLDXAU', display_name: 'GOLD BASKET', market: 'commodity_basket', market_display_name: 'Commodity Baskets', display_order: 0 }
+            ];
+            function populateSymbolDropdown() {
+                var sel = document.getElementById('symbol');
+                if (!sel) return;
+                var list = manualSymbols.slice().sort(function(a, b) {
+                    if (a.display_order !== b.display_order) return a.display_order - b.display_order;
+                    if (a.market !== b.market) return a.market.localeCompare(b.market);
+                    return (a.display_name || '').localeCompare(b.display_name || '');
+                });
+                var groups = {};
+                list.forEach(function(s) {
+                    var m = s.market || 'Other';
+                    var label = s.market_display_name || m;
+                    if (!groups[m]) groups[m] = { label: label, symbols: [] };
+                    groups[m].symbols.push(s);
+                });
+                Object.keys(groups).sort().forEach(function(market) {
+                    var opt = document.createElement('optgroup');
+                    opt.label = groups[market].label;
+                    groups[market].symbols.forEach(function(s) {
+                        var o = document.createElement('option');
+                        o.value = s.symbol;
+                        o.textContent = s.display_name;
+                        opt.appendChild(o);
+                    });
+                    sel.appendChild(opt);
+                });
+                var saved = localStorage.getItem('mt5-symbol');
+                if (saved && sel.querySelector('option[value="' + saved + '"]')) sel.value = saved;
+                else if (sel.querySelector('option[value="R_10"]')) sel.value = 'R_10';
+                else if (sel.options.length) sel.selectedIndex = 0;
+            }
+            function getEATNow() {
+                var now = new Date();
+                var eatStr = now.toLocaleTimeString('en-GB', { timeZone: EAT_TZ, hour: '2-digit', minute: '2-digit', hour12: false });
+                return eatStr.substring(0, 5);
+            }
+            function getEATNowPlusDuration(minutes, seconds) {
+                var now = new Date();
+                var str = now.toLocaleTimeString('en-GB', { timeZone: EAT_TZ, hour: '2-digit', minute: '2-digit', hour12: false });
+                var parts = str.split(':');
+                var h = parseInt(parts[0], 10);
+                var m = parseInt(parts[1], 10);
+                var totalSec = (h * 3600) + (m * 60) + (minutes || 0) * 60 + (seconds || 0);
+                totalSec = totalSec % 86400;
+                if (totalSec < 0) totalSec += 86400;
+                h = Math.floor(totalSec / 3600);
+                m = Math.floor((totalSec % 3600) / 60);
+                return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+            }
+
+            populateSymbolDropdown();
+            var tf = localStorage.getItem('mt5-timeframe');
+            if (tf) {
+                var t = parseInt(tf, 10);
+                if (!isNaN(t) && t >= 5) {
+                    document.getElementById('timeframeMin').value = Math.floor(t / 60);
+                    document.getElementById('timeframeSec').value = t % 60;
+                }
+            }
+            document.getElementById('symbol').addEventListener('change', function() {
+                try { localStorage.setItem('mt5-symbol', this.value); } catch (e) {}
+            });
+
+            function updateValidTo() {
+                var validFrom = document.getElementById('validFrom').value;
+                if (!validFrom) { document.getElementById('validTo').value = ''; return; }
+                var min = parseInt(document.getElementById('validToMin').value, 10) || 0;
+                var sec = parseInt(document.getElementById('validToSec').value, 10) || 0;
+                var parts = validFrom.split(':');
+                var h = parseInt(parts[0], 10) || 0;
+                var m = parseInt(parts[1], 10) || 0;
+                var totalM = h * 60 + m + min;
+                var totalS = (totalM * 60) + sec;
+                totalS = totalS % 86400;
+                h = Math.floor(totalS / 3600);
+                m = Math.floor((totalS % 3600) / 60);
+                document.getElementById('validTo').value = (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+            }
+            document.getElementById('validFromNow').addEventListener('click', function() {
+                document.getElementById('validFrom').value = getEATNow();
+                updateValidTo();
+            });
+            document.getElementById('validFrom').addEventListener('change', updateValidTo);
+            document.getElementById('validToMin').addEventListener('input', updateValidTo);
+            document.getElementById('validToSec').addEventListener('input', updateValidTo);
+
+            function encodeSignalToken(payload) {
+                try {
+                    var obj = {
+                        v: 1,
+                        symbol: String(payload.symbol).trim(),
+                        type: payload.type,
+                        validFrom: String(payload.validFrom).substring(0, 5),
+                        validTo: String(payload.validTo).substring(0, 5),
+                        timeframe: Number(payload.timeframe) || 5
+                    };
+                    return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
+                } catch (e) {
+                    return null;
+                }
+            }
+
+            function showMessage(text, isError) {
+                var el = document.getElementById('message');
+                el.textContent = text;
+                el.className = 'message show ' + (isError ? 'error' : 'success');
+                setTimeout(function() { el.classList.remove('show'); }, 3500);
+            }
+
+            document.getElementById('generateBtn').addEventListener('click', function() {
+                var symbol = document.getElementById('symbol').value.trim();
+                var direction = document.getElementById('direction').value;
+                var validFrom = (document.getElementById('validFrom').value || '').trim().substring(0, 5);
+                var validTo = (document.getElementById('validTo').value || '').trim().substring(0, 5);
+                var tfMin = parseInt(document.getElementById('timeframeMin').value, 10);
+                var tfSec = parseInt(document.getElementById('timeframeSec').value, 10);
+                var timeframeVal = (isNaN(tfMin) ? 0 : tfMin) * 60 + (isNaN(tfSec) ? 0 : tfSec);
+
+                if (!symbol) {
+                    showMessage('Enter a symbol.', true);
+                    return;
+                }
+                if (!validFrom || !validTo) {
+                    showMessage('Set Valid from and Valid to.', true);
+                    return;
+                }
+                if (timeframeVal < 5) {
+                    showMessage('Chart timeframe must be at least 5 seconds (e.g. 0 min 5 sec).', true);
+                    return;
+                }
+
+                var payload = {
+                    symbol: symbol,
+                    type: direction,
+                    validFrom: validFrom.substring(0, 5),
+                    validTo: validTo.substring(0, 5),
+                    timeframe: timeframeVal
+                };
+                var token = encodeSignalToken(payload);
+                if (!token) {
+                    showMessage('Failed to generate token.', true);
+                    return;
+                }
+                document.getElementById('tokenOutput').value = token;
+                document.getElementById('result').classList.add('show');
+                localStorage.setItem('mt5-timeframe', String(timeframeVal));
+                showMessage('Token generated. Copy and share it.', false);
+            });
+
+            document.getElementById('copyBtn').addEventListener('click', function() {
+                var ta = document.getElementById('tokenOutput');
+                var token = ta.value;
+                if (!token) return;
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(token).then(function() {
+                        showMessage('Copied to clipboard.', false);
+                    }).catch(function() {
+                        copyFallback(token);
+                    });
+                } else {
+                    copyFallback(token);
+                }
+            });
+
+            function copyFallback(text) {
+                var input = document.createElement('textarea');
+                input.value = text;
+                input.style.position = 'fixed';
+                input.style.opacity = '0';
+                document.body.appendChild(input);
+                input.select();
+                try {
+                    document.execCommand('copy');
+                    showMessage('Copied.', false);
+                } catch (e) {
+                    showMessage('Copy failed.', true);
+                }
+                document.body.removeChild(input);
+            }
+        })();
+    </script>
+</body>
+</html>
