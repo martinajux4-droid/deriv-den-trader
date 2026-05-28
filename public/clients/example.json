@@ -1,0 +1,52 @@
+{
+  "id": "example",
+  "displayName": "Example Client",
+  "loaderName": "Dmt5sample",
+  "theme": {
+    "defaultColorScheme": "dark",
+    "cssVars": {
+      "--candle-up": "#d4af37",
+      "--candle-up-muted": "rgba(212, 175, 55, 0.14)",
+      "--animation-color-2": "rgba(212, 175, 55, 0.2)",
+      "--ui-accent": "#b8860b",
+      "--ui-accent-hover": "#d4af37",
+      "--ui-accent-active": "#9a7209",
+      "--ui-accent-deep": "#7a5c08",
+      "--ui-accent-border": "#daa520",
+      "--ui-accent-left": "#f0d878",
+      "--ui-accent-left-strong": "#fcf4c9",
+      "--ui-accent-gradient-start": "#d4af37",
+      "--ui-accent-gradient-end": "#9a7209",
+      "--ui-accent-signup-hover": "#7a5c08",
+      "--ui-accent-icon-bg": "rgba(184, 134, 11, 0.18)",
+      "--ui-accent-rgb": "184, 134, 11",
+      "--ui-accent-bright": "#d4af37",
+      "--ui-accent-bright-rgb": "212, 175, 55",
+      "--accent-primary": "#b8860b",
+      "--accent-secondary": "#d4af37"
+    }
+  },
+  "pwa": {
+    "shortName": "Example",
+    "name": "Example Client — Deriv Trader",
+    "documentTitle": "Example Client — Professional Deriv Trading",
+    "initials": "EC",
+    "description": "Professional trading platform powered by Deriv"
+  },
+  "api": {
+    "signupUrl": "",
+    "redirectUri": "",
+    "old": {
+      "appId": "",
+      "token1": "",
+      "token2": ""
+    },
+    "new": {
+      "oauthAppId": "",
+      "accessToken": ""
+    }
+  },
+  "loadingScreen": {
+    "html": "<div class=\"loader-content\"><div class=\"loader-brand\"><div class=\"loader-logo\">Example Client</div><div class=\"loader-tagline\">Custom HTML load screen (see clients/example.json)</div></div><div class=\"loader-progress\"><div class=\"loader-progress-bar\"></div></div><div class=\"loader-status\">Initializing...</div></div>"
+  }
+}

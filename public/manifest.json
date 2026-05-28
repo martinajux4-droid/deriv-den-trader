@@ -1,0 +1,18 @@
+{
+  "short_name": "HIFEX PRO",
+  "name": "HIFEX PRO — Deriv Trader",
+  "description": "Professional trading platform powered by Deriv",
+  "icons": [
+    {
+      "src": "pwa-icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#031a05",
+  "background_color": "#031a05",
+  "orientation": "portrait"
+}

@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Authentication Verification</title>
+    <script src="/client-verify-ui.js"></script>
+    <script>
+        // Theme + CSS vars from client JSON (build-client.mjs → client-verify-ui.js); else match original verify defaults.
+        (function() {
+            var ui = window.__CLIENT_VERIFY_UI__;
+            var saved = null;
+            try { saved = localStorage.getItem('mt5-theme'); } catch (e) {}
+            var useDark;
+            if (saved === 'dark') useDark = true;
+            else if (saved === 'light') useDark = false;
+            else if (ui && ui.defaultColorScheme === 'dark') useDark = true;
+            else if (ui && ui.defaultColorScheme === 'light') useDark = false;
+            else useDark = false;
+
+            document.documentElement.classList.toggle('dark-theme', useDark);
+            document.documentElement.classList.toggle('light-theme', !useDark);
+            function applyBody() {
+                if (!document.body) return;
+                document.body.classList.toggle('dark-theme', useDark);
+                document.body.classList.toggle('light-theme', !useDark);
+            }
+            applyBody();
+            if (!document.body) document.addEventListener('DOMContentLoaded', applyBody);
+
+            if (ui && ui.cssVars && typeof ui.cssVars === 'object') {
+                Object.keys(ui.cssVars).forEach(function(k) {
+                    if (typeof ui.cssVars[k] === 'string') {
+                        document.documentElement.style.setProperty(k, ui.cssVars[k]);
+                    }
+                });
+            }
+            // Dev / original defaults (when no client is selected): match dynamic accent (blue)
+            // so the verify loader is consistent with the app's default brand color.
+            document.documentElement.style.setProperty('--verify-brand-accent', '#60a5fa');
+            document.documentElement.style.setProperty('--verify-progress-bar', '#2563eb');
+
+            var vars = ui && ui.cssVars;
+            var accent = vars && vars['--ui-accent-bright'] ? vars['--ui-accent-bright']
+                : (vars && vars['--accent-primary'] ? vars['--accent-primary'] : '');
+            if (accent) {
+                document.documentElement.style.setProperty('--verify-brand-accent', accent);
+            }
+            var progress = accent || (vars && vars['--ui-accent'] ? vars['--ui-accent'] : '');
+            if (progress) {
+                document.documentElement.style.setProperty('--verify-progress-bar', progress);
+            }
+        })();
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* CSS Variables for Theme - Matching index.html */
+        :root {
+            /* Dark Theme (MT5 Dark) */
+            --bg-primary: #000000;
+            --bg-secondary: #1A1A1A;
+            --bg-tertiary: #2A2A2A;
+            --bg-controls: #1A1A1A;
+            --text-primary: #C0C0C0;
+            --text-secondary: #E0E0E0;
+            --border-color: #333333;
+            --border-hover: #404040;
+            --border-focus: #505050;
+            --grid-color: #1A1A1A;
+            --chart-bg: #000000;
+            /* Keep verify.html consistent with app: bullish uses dynamic accent (blue by default). */
+            --ui-accent-bright: #60a5fa;
+            --ui-accent-bright-rgb: 96, 165, 250;
+            --candle-up: var(--ui-accent-bright, #00FF00);
+            --candle-down: #FFFFFF;
+            --status-connected: #3b82f6;
+            --status-disconnected: #FF0000;
+            --animation-color-1: rgba(59, 130, 246, 0.3);
+            --animation-color-2: rgba(59, 130, 246, 0.2);
+            --animation-color-3: rgba(59, 130, 246, 0.1);
+        }
+
+        html.light-theme,
+        body.light-theme {
+            /* Light Theme (MT5 Light) */
+            --bg-primary: #FFFFFF;
+            --bg-secondary: #F5F5F5;
+            --bg-tertiary: #E8E8E8;
+            --bg-controls: #F5F5F5;
+            --text-primary: #000000;
+            --text-secondary: #333333;
+            --border-color: #D0D0D0;
+            --border-hover: #B0B0B0;
+            --border-focus: #808080;
+            --grid-color: #E0E0E0;
+            --chart-bg: #FFFFFF;
+            --ui-accent-bright: #60a5fa;
+            --ui-accent-bright-rgb: 96, 165, 250;
+            --candle-up: var(--ui-accent-bright, #008000);
+            --candle-down: #FF0000;
+            --status-connected: #2563eb;
+            --status-disconnected: #FF0000;
+            --animation-color-1: rgba(37, 99, 235, 0.2);
+            --animation-color-2: rgba(0, 128, 0, 0.15);
+            --animation-color-3: rgba(37, 99, 235, 0.08);
+        }
+
+        html {
+            background: var(--bg-primary);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', 'Tahoma', 'Verdana', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Professional Loader Styles */
+        #loader-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            background-color: var(--bg-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+
+        #loader-wrapper.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .loader-content {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 32px;
+            max-width: 400px;
+            padding: 40px;
+        }
+
+        /* Logo/Brand Section */
+        .loader-brand {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .loader-logo {
+            font-size: 32px;
+            font-weight: 700;
+            font-family: 'Arial', 'Tahoma', 'Verdana', sans-serif;
+            color: var(--text-secondary);
+            letter-spacing: 2px;
+            margin: 0;
+            animation: fadeInScale 0.8s ease-out;
+        }
+
+        .loader-logo .brand-accent {
+            color: var(--verify-brand-accent, #FF0000);
+        }
+
+        .loader-tagline {
+            font-size: 10px;
+            font-weight: 400;
+            font-family: 'Arial', 'Tahoma', 'Verdana', sans-serif;
+            color: var(--text-primary);
+            opacity: 0.6;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin: 0;
+            animation: fadeIn 0.8s ease-out 0.3s;
+            animation-fill-mode: both;
+        }
+
+        /* Professional Progress Indicator */
+        .loader-progress {
+            width: 100%;
+            max-width: 200px;
+            height: 2px;
+            background: var(--border-color);
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+            animation: fadeIn 0.8s ease-out 0.5s;
+            animation-fill-mode: both;
+        }
+
+        .loader-progress-bar {
+            height: 100%;
+            background: var(--verify-progress-bar, #000000);
+            border-radius: 2px;
+            width: 0%;
+            position: relative;
+            overflow: hidden;
+            animation: progressLoad 2s ease-in-out infinite;
+        }
+
+        .loader-progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.3),
+                transparent
+            );
+            animation: shimmer 1.5s ease-in-out infinite;
+        }
+
+        @keyframes progressLoad {
+            0% {
+                width: 0%;
+            }
+            50% {
+                width: 70%;
+            }
+            100% {
+                width: 100%;
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%);
+            }
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        /* Status Text */
+        .loader-status {
+            font-size: 11px;
+            font-weight: 400;
+            font-family: 'Arial', 'Tahoma', 'Verdana', sans-serif;
+            color: var(--text-primary);
+            opacity: 0.5;
+            letter-spacing: 0.5px;
+            margin: 0;
+            animation: fadeIn 0.8s ease-out 0.7s;
+            animation-fill-mode: both;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .loader-logo {
+                font-size: 28px;
+            }
+            .loader-content {
+                gap: 24px;
+                padding: 30px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .loader-logo {
+                font-size: 24px;
+            }
+            .loader-content {
+                gap: 20px;
+                padding: 20px;
+            }
+        }
+
+        /* Full-screen error — max z-index so custom client loaders cannot cover it */
+        .verify-error-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 2147483646;
+            isolation: isolate;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            padding: 24px;
+            overflow: auto;
+            align-items: flex-start;
+            justify-content: center;
+            visibility: visible;
+        }
+        .verify-error-overlay:not(.hidden) {
+            display: flex !important;
+        }
+        .verify-error-card {
+            max-width: 640px;
+            width: 100%;
+            margin-top: 8vh;
+            padding: 28px 24px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--bg-secondary);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+        }
+        .verify-error-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #f87171;
+            margin: 0 0 16px;
+        }
+        .verify-error-body {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+            margin: 0 0 16px;
+            padding: 14px;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+        .verify-error-hint {
+            font-size: 12px;
+            opacity: 0.75;
+            margin: 0 0 20px;
+            line-height: 1.45;
+        }
+        .verify-error-btn {
+            display: inline-block;
+            padding: 10px 18px;
+            border-radius: 8px;
+            background: var(--ui-accent-bright, #3b82f6);
+            color: #0a0a0a;
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .verify-error-btn:hover {
+            filter: brightness(1.08);
+        }
+        .verify-error-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+        button.verify-error-btn--secondary {
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="verify-error-overlay" class="verify-error-overlay hidden" hidden>
+        <div class="verify-error-card">
+            <h2 class="verify-error-title">Authentication error</h2>
+            <pre id="verify-error-body" class="verify-error-body"></pre>
+            <p class="verify-error-hint">The message is saved in sessionStorage until you clear it. Open <code>/verify.html?verify_restore=1</code> later to see the last error again. DevTools (F12) → Console has <code>[verify]</code> logs. This page does not auto-redirect on error.</p>
+            <div class="verify-error-actions">
+                <button type="button" class="verify-error-btn verify-error-btn--secondary" id="verify-error-copy">Copy error text</button>
+                <button type="button" class="verify-error-btn verify-error-btn--secondary" id="verify-error-clear">Clear saved error</button>
+                <a href="/" class="verify-error-btn">Back to app</a>
+            </div>
+        </div>
+    </div>
+    <div id="loader-wrapper">
+        <div class="loader-content">
+            <div class="loader-brand">
+                <div class="loader-logo"><span class="brand-accent">D</span>mt5</div>
+                <div class="loader-tagline">Powered by Deriv</div>
+            </div>
+            <div class="loader-progress">
+                <div class="loader-progress-bar"></div>
+            </div>
+            <div class="loader-status">Initializing...</div>
+        </div>
+    </div>
+    <script>
+    (function() {
+        var ui = window.__CLIENT_VERIFY_UI__;
+        var wrap = document.getElementById('loader-wrapper');
+        if (wrap && ui && ui.loadingScreen && typeof ui.loadingScreen.html === 'string' && ui.loadingScreen.html.trim()) {
+            wrap.innerHTML = ui.loadingScreen.html.trim();
+            if (ui.displayName) {
+                document.title = 'Authentication · ' + ui.displayName;
+            }
+            return;
+        }
+        var logoEl = document.querySelector('.loader-logo');
+        if (logoEl) {
+            if (ui && typeof ui.loaderName === 'string' && ui.loaderName.trim()) {
+                logoEl.textContent = ui.loaderName.trim();
+            } else {
+                logoEl.innerHTML = '<span class="brand-accent">D</span>mt5';
+            }
+        }
+        if (ui && ui.displayName) {
+            document.title = 'Authentication · ' + ui.displayName;
+        }
+    })();
+    </script>
+    
+    <!-- Deriv config; client-deriv-overrides.js is generated for branded builds (see build-client.mjs) -->
+    <script src="/deriv-config.js"></script>
+    <script src="/client-deriv-overrides.js"></script>
+    <script>
+    function effectiveDerivRedirectUri() {
+        var o = window.__CLIENT_DIST_DERIV_OVERRIDES__;
+        if (o === null || o === undefined) {
+            return typeof DERIV_REDIRECT_URI !== 'undefined' ? DERIV_REDIRECT_URI : '';
+        }
+        if (typeof o === 'object' && !Array.isArray(o)) {
+            var r = typeof o.redirectUri === 'string' ? o.redirectUri.trim() : '';
+            if (r) return r;
+            return window.location.origin + '/verify.html';
+        }
+        return typeof DERIV_REDIRECT_URI !== 'undefined' ? DERIV_REDIRECT_URI : '';
+    }
+    </script>
+    <script>
+    // ── Deriv OAuth callback handler — supports both old and new API ──────────
+    // This page is the redirect_uri for both flows:
+    //   Old API → ?acct1=CR...&token1=xxx&cur1=USD&acct2=VRT...&token2=yyy&cur2=USD
+    //   New API → ?code=AUTH_CODE&state=STATE
+    // ─────────────────────────────────────────────────────────────────────────
+
+    var VERIFY_ERR_KEY = 'verify_last_error';
+    var VERIFY_ERR_TS = 'verify_last_error_ts';
+
+    function setStatus(msg) {
+        const el = document.querySelector('.loader-status');
+        if (el) el.textContent = msg;
+        console.log('[verify]', msg);
+    }
+
+    /** Full-screen error panel + sessionStorage; does not auto-redirect. */
+    function showError(msg) {
+        var text = typeof msg === 'string' ? msg : String(msg);
+        try {
+            try {
+                sessionStorage.setItem(VERIFY_ERR_KEY, text);
+                sessionStorage.setItem(VERIFY_ERR_TS, String(Date.now()));
+            } catch (e) { /* private mode etc. */ }
+            try {
+                document.title = 'Auth error · verify.html';
+            } catch (e) { /* */ }
+
+            console.error('[verify] Error:', text);
+
+            var overlay = document.getElementById('verify-error-overlay');
+            var bodyEl = document.getElementById('verify-error-body');
+            var wrap = document.getElementById('loader-wrapper');
+            if (bodyEl) bodyEl.textContent = text;
+            if (overlay) {
+                overlay.classList.remove('hidden');
+                overlay.removeAttribute('hidden');
+                overlay.style.setProperty('display', 'flex', 'important');
+                overlay.style.setProperty('z-index', '2147483646', 'important');
+                overlay.style.visibility = 'visible';
+            }
+            if (wrap) {
+                wrap.style.display = 'none';
+                wrap.style.visibility = 'hidden';
+            }
+            setStatus('Error — see panel above');
+
+            var copyBtn = document.getElementById('verify-error-copy');
+            var clearBtn = document.getElementById('verify-error-clear');
+            if (copyBtn && !copyBtn._verifyWired) {
+                copyBtn._verifyWired = true;
+                copyBtn.addEventListener('click', function () {
+                    var t = document.getElementById('verify-error-body');
+                    var s = t ? t.textContent : '';
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(s).then(function () {
+                            copyBtn.textContent = 'Copied!';
+                            setTimeout(function () { copyBtn.textContent = 'Copy error text'; }, 2500);
+                        }).catch(function () {});
+                    }
+                });
+            }
+            if (clearBtn && !clearBtn._verifyWired) {
+                clearBtn._verifyWired = true;
+                clearBtn.addEventListener('click', function () {
+                    try {
+                        sessionStorage.removeItem(VERIFY_ERR_KEY);
+                        sessionStorage.removeItem(VERIFY_ERR_TS);
+                    } catch (e) {}
+                    try { document.title = 'Authentication Verification'; } catch (e) {}
+                    var ov = document.getElementById('verify-error-overlay');
+                    var w = document.getElementById('loader-wrapper');
+                    if (ov) {
+                        ov.classList.add('hidden');
+                        ov.setAttribute('hidden', '');
+                        ov.style.removeProperty('display');
+                        ov.style.removeProperty('z-index');
+                    }
+                    if (w) {
+                        w.style.display = '';
+                        w.style.visibility = '';
+                    }
+                });
+            }
+        } catch (outer) {
+            console.error('[verify] showError failed:', outer);
+            try {
+                alert('verify.html error:\n\n' + text);
+            } catch (e2) {}
+        }
+    }
+
+    // ── Old API: parse legacy token params and redirect straight to the app ───
+    function handleOldApiCallback(params) {
+        console.group('[verify] OLD API callback detected');
+        console.log('Full URL search:', window.location.search);
+        setStatus('Loading accounts...');
+
+        // Collect all numbered param groups from the URL
+        const rawTokens  = {};
+        const rawAccts   = {};
+        const rawCurs    = {};
+        for (const [key, value] of params.entries()) {
+            if      (key.startsWith('token')) rawTokens[key] = value;
+            else if (key.startsWith('acct'))  rawAccts[key]  = value;
+            else if (key.startsWith('cur'))   rawCurs[key]   = value;
+        }
+
+        console.log('Raw accounts found:', rawAccts);
+        console.log('Raw currencies    :', rawCurs);
+        console.log('Tokens found (masked):', Object.fromEntries(
+            Object.entries(rawTokens).map(([k,v]) => [k, v.slice(0,8)+'...'])
+        ));
+
+        // Sort indices so we process acct1 → acct4 in order
+        const indices = Object.keys(rawAccts)
+            .map(k => k.replace('acct', ''))
+            .sort();
+
+        let realToken = '', realAcct = '', realCur = '';
+        let demoToken = '', demoAcct = '', demoCur = '';
+
+        indices.forEach(idx => {
+            const account  = rawAccts['acct'  + idx] || '';
+            const token    = rawTokens['token' + idx] || '';
+            const currency = rawCurs['cur'    + idx] || '';
+
+            console.log(`  [acct${idx}] account=${account} currency=${currency} token=${token ? token.slice(0,8)+'...' : '[missing]'}`);
+
+            // CR accounts (not CRW wallets) → real trading
+            if (account.startsWith('CR') && !account.startsWith('CRW')) {
+                if (!realAcct || currency === 'USD') {
+                    realToken = token;
+                    realAcct  = account;
+                    realCur   = currency;
+                    console.log(`  → SELECTED as REAL account (${currency})`);
+                } else {
+                    console.log(`  → Skipped (already have real account in USD)`);
+                }
+            }
+            // VRT / VRTC accounts (not VRW wallets) → demo trading
+            else if ((account.startsWith('VRT') || account.startsWith('VRTC')) && !account.startsWith('VRW')) {
+                demoToken = token;
+                demoAcct  = account;
+                demoCur   = currency;
+                console.log(`  → SELECTED as DEMO account`);
+            }
+            // CRW / VRW wallet accounts — skip
+            else if (account.startsWith('CRW') || account.startsWith('VRW')) {
+                console.log(`  → SKIPPED (wallet account)`);
+            } else {
+                console.warn(`  → UNRECOGNISED account prefix, skipping: ${account}`);
+            }
+        });
+
+        console.log('Final selection — real:', realAcct || '[none]', '| demo:', demoAcct || '[none]');
+
+        if (!realAcct && !demoAcct) {
+            console.error('[verify] No usable accounts found in callback! Cannot proceed.');
+            console.log('Check that the Deriv app_id registered in deriv-config.js matches the account.');
+            console.groupEnd();
+            showError('No trading accounts found. Please check your Deriv app registration.');
+            return;
+        }
+
+        // Persist to sessionStorage (trading.js reads these on startup)
+        if (realAcct) {
+            sessionStorage.setItem('token1', realToken);
+            sessionStorage.setItem('acct1',  realAcct);
+            sessionStorage.setItem('cur1',   realCur);
+            console.log('Stored token1/acct1/cur1:', realAcct, realCur);
+        }
+        if (demoAcct) {
+            sessionStorage.setItem('token2', demoToken);
+            sessionStorage.setItem('acct2',  demoAcct);
+            sessionStorage.setItem('cur2',   demoCur);
+            console.log('Stored token2/acct2/cur2:', demoAcct, demoCur);
+        }
+
+        // Honour pre-login account preference
+        const preferred = sessionStorage.getItem('preferred_account_type');
+        console.log('preferred_account_type:', preferred || '[none]');
+        if      (preferred === 'demo' && demoAcct) sessionStorage.setItem('selectedAccount', 'acct2');
+        else if (realAcct)                         sessionStorage.setItem('selectedAccount', 'acct1');
+        else if (demoAcct)                         sessionStorage.setItem('selectedAccount', 'acct2');
+        sessionStorage.removeItem('preferred_account_type');
+
+        console.log('selectedAccount set to:', sessionStorage.getItem('selectedAccount'));
+        console.log('[verify] Old-API auth complete — redirecting to /');
+        console.groupEnd();
+
+        setStatus('Ready! Loading trading app...');
+        window.history.replaceState({}, '', window.location.pathname);
+        window.location.href = '/';
+    }
+
+    async function handleCallback() {
+        const params = new URLSearchParams(window.location.search);
+
+        // Debug: verify.html?verify_restore=1 — show last error from sessionStorage (no OAuth params)
+        if (
+            params.get('verify_restore') === '1' &&
+            !params.get('error') &&
+            !params.get('code') &&
+            !params.get('token1')
+        ) {
+            const prev = sessionStorage.getItem(VERIFY_ERR_KEY);
+            if (prev) {
+                showError('[Restored from last attempt]\n\n' + prev);
+            } else {
+                showError('No saved error in sessionStorage yet. Cause a failure first, or open DevTools → Application → Session Storage.');
+            }
+            return;
+        }
+
+        console.group('[verify] handleCallback() — URL:', window.location.href);
+        console.log('token1 param:', params.get('token1') ? '[present]' : '[absent]');
+        console.log('code   param:', params.get('code')   ? '[present]' : '[absent]');
+        console.log('error  param:', params.get('error')  || '[absent]');
+        console.groupEnd();
+
+        // ── Detect old API callback (Deriv sends token params, not a code) ────
+        if (params.get('token1')) {
+            handleOldApiCallback(params);
+            return;
+        }
+
+        // ── Check for OAuth error response (decode description for readability) ──
+        if (params.get('error')) {
+            const errCode = params.get('error');
+            const rawDesc = params.get('error_description');
+            let desc = '';
+            if (rawDesc) {
+                try {
+                    desc = decodeURIComponent(rawDesc.replace(/\+/g, ' '));
+                } catch (e) {
+                    desc = rawDesc;
+                }
+            }
+            const lines = [];
+            if (errCode) lines.push('error: ' + errCode);
+            if (desc) lines.push(desc);
+            showError(lines.join('\n\n') || errCode || 'Unknown OAuth error');
+            return;
+        }
+
+        const code  = params.get('code');
+        const state = params.get('state');
+
+        // ── No code → don't redirect silently (hard to debug); stay on page ───
+        if (!code) {
+            showError(
+                'No OAuth callback on this URL (missing ?code=…).\n\n' +
+                'If you opened verify.html directly, use Login from the app instead.\n' +
+                'If you returned from Deriv without a code, check the OAuth app redirect URI and client ID.\n\n' +
+                'Full URL:\n' + window.location.href
+            );
+            return;
+        }
+
+        // ── Verify state (CSRF protection) ───────────────────────────────────
+        const savedState    = sessionStorage.getItem('oauth_state');
+        const codeVerifier  = sessionStorage.getItem('pkce_verifier');
+
+        if (!savedState || state !== savedState) {
+            showError('State mismatch — possible CSRF attack. Please log in again.');
+            return;
+        }
+        if (!codeVerifier) {
+            showError('PKCE verifier missing. Please log in again.');
+            return;
+        }
+
+        // Clear PKCE values now that we have the code
+        sessionStorage.removeItem('oauth_state');
+        sessionStorage.removeItem('pkce_verifier');
+
+        // ── Step 1: Exchange code for access_token via Vercel backend ─────────
+        setStatus('Authenticating...');
+        let access_token;
+        try {
+            const res = await fetch(DERIV_BACKEND_URL + '/api/token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    code:          code,
+                    code_verifier: codeVerifier,
+                    redirect_uri:  effectiveDerivRedirectUri()
+                })
+            });
+            const raw = await res.text();
+            let data = {};
+            try {
+                data = raw ? JSON.parse(raw) : {};
+            } catch (parseErr) {
+                showError('Token server returned non-JSON (HTTP ' + res.status + '):\n\n' + raw.slice(0, 4000));
+                return;
+            }
+            if (!res.ok || !data.access_token) {
+                showError(
+                    (data.error || data.message || 'Token exchange failed') +
+                    (data.error_description ? '\n\n' + data.error_description : '') +
+                    (raw && raw.length < 800 ? '\n\nResponse:\n' + raw : '')
+                );
+                return;
+            }
+            access_token = data.access_token;
+            sessionStorage.setItem('deriv_access_token', access_token);
+            console.log('[verify] Token obtained');
+        } catch (e) {
+            showError('Network error during token exchange: ' + (e && e.message ? e.message : String(e)));
+            return;
+        }
+
+        // ── Step 2: Fetch trading accounts ────────────────────────────────────
+        setStatus('Loading accounts...');
+        let accounts;
+        try {
+            const res = await fetch(DERIV_BACKEND_URL + '/api/accounts', {
+                headers: { 'Authorization': 'Bearer ' + access_token }
+            });
+            const rawAcc = await res.text();
+            let data = {};
+            try {
+                data = rawAcc ? JSON.parse(rawAcc) : {};
+            } catch (parseErr) {
+                showError('Accounts server returned non-JSON (HTTP ' + res.status + '):\n\n' + rawAcc.slice(0, 4000));
+                return;
+            }
+            if (!res.ok || !data.accounts) {
+                showError((data.error || data.message || 'Failed to load accounts') + (rawAcc && rawAcc.length < 1200 ? '\n\n' + rawAcc : ''));
+                return;
+            }
+            accounts = data.accounts;
+            console.log('[verify] Accounts loaded:', accounts.map(a => a.account_id + '(' + a.account_type + ')'));
+        } catch (e) {
+            showError('Network error loading accounts: ' + (e && e.message ? e.message : String(e)));
+            return;
+        }
+
+        // ── Step 3: Map real and demo accounts ────────────────────────────────
+        const realAccount = accounts.find(a => a.account_type === 'real');
+        const demoAccount = accounts.find(a => a.account_type === 'demo');
+
+        // Store account IDs and display info (for backward-compat with trading.js)
+        if (realAccount) {
+            sessionStorage.setItem('acct1',                  realAccount.account_id);
+            sessionStorage.setItem('cur1',                   realAccount.currency || 'USD');
+            sessionStorage.setItem('deriv_account_real_id',  realAccount.account_id);
+            sessionStorage.setItem('deriv_user_name',        realAccount.name || realAccount.email || realAccount.account_id);
+        }
+        if (demoAccount) {
+            sessionStorage.setItem('acct2',                  demoAccount.account_id);
+            sessionStorage.setItem('cur2',                   demoAccount.currency || 'USD');
+            sessionStorage.setItem('deriv_account_demo_id',  demoAccount.account_id);
+            if (!realAccount) {
+                sessionStorage.setItem('deriv_user_name',    demoAccount.name || demoAccount.email || demoAccount.account_id);
+            }
+        }
+
+        // ── Step 4: Set selected account based on pre-login preference ──────────
+        // (OTP is fetched fresh by trading.js on each connection — not pre-fetched here)
+        const preferred = sessionStorage.getItem('preferred_account_type');
+        if (preferred === 'demo' && demoAccount) {
+            sessionStorage.setItem('selectedAccount', 'acct2');
+        } else if (preferred === 'real' && realAccount) {
+            sessionStorage.setItem('selectedAccount', 'acct1');
+        } else if (realAccount) {
+            sessionStorage.setItem('selectedAccount', 'acct1'); // default to real
+        } else if (demoAccount) {
+            sessionStorage.setItem('selectedAccount', 'acct2'); // fallback to demo
+        }
+        sessionStorage.removeItem('preferred_account_type');
+
+        // ── Done — go to the trading app ─────────────────────────────────────
+        setStatus('Ready! Loading trading app...');
+        console.log('[verify] Auth complete, redirecting to app');
+
+        // Clean the callback URL from the address bar before navigating
+        window.history.replaceState({}, '', window.location.pathname);
+        window.location.href = '/';
+    }
+
+    // Run on page load — catch unexpected failures so they still use showError
+    handleCallback().catch(function (err) {
+        showError('Unexpected error in verify handler:\n\n' + (err && err.stack ? err.stack : String(err)));
+    });
+    </script>
+</body>
+
+</html>
